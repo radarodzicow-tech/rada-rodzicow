@@ -741,7 +741,7 @@ function mtype(m){
   if(m.type==='inne')return {gen:'spotkania',nom:'spotkanie',noun:'Spotkanie'};
   return {gen:'zebrania Rady Rodziców',nom:'zebranie Rady Rodziców',noun:'Zebranie'};
 }
-function attendees(m){const l=[...db.members].sort(byFunc);return m.type==='prezydium'?l.filter(x=>PRES.includes(x.func)):l;}
+function attendees(m){const l=[...db.members].sort(byFunc);return m.type==='rada'?l:l.filter(x=>PRES.includes(x.func));}
 function attStats(m){const a=attendees(m),at=m.att||{};const f=k=>a.filter(x=>at[x.id]===k);return {all:a,p:f('p'),n:f('n'),u:f('u')};}
 const names=a=>a.map(x=>x.name).join(', ');
 function attCounts(m){
