@@ -50,6 +50,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .k-member{--kc:var(--butter);--kd:var(--butter-d)}
 .k-settings{--kc:var(--rose);--kd:var(--rose-d)}
 .k-doc{--kc:var(--sky);--kd:var(--sky-d)}
+.k-cal{--kc:var(--rose);--kd:var(--rose-d)}
 
 .idrow{width:100%;max-width:1180px;margin:0 auto;padding:10px 16px 0;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .idpill{flex:none;background:var(--butter);color:var(--butter-d);font-size:12px;font-weight:800;border-radius:999px;padding:4px 11px;white-space:nowrap}
@@ -73,6 +74,34 @@ button{font:inherit;color:inherit;cursor:pointer}
 .vwarn{display:inline-flex;align-items:center;gap:6px;color:#C62F2F;font-weight:800}
 .vwarn i{font-style:normal;width:22px;height:22px;border-radius:999px;background:#D93A3A;color:#fff;display:inline-grid;place-items:center;font-size:14px;flex:none}
 .vdone{color:var(--mint-d);font-weight:800}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calgrid .dow{font-size:12px;font-weight:800;color:var(--muted);text-align:center;padding:2px 0}
+.cday{min-height:64px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:4px;display:flex;flex-direction:column;gap:2px;text-align:left;font:inherit;color:inherit;min-width:0;overflow:hidden}
+.cday.out{opacity:.38}
+.cday.today{border:2px solid var(--primary)}
+.cday.pick{background:var(--kc)}
+.cday .dn{font-size:12.5px;font-weight:800}
+.cdot{display:block;font-size:11px;line-height:1.25;font-weight:700;border-radius:6px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cdot.ev{background:var(--rose);color:var(--rose-d)}
+.cdot.mt{background:var(--mint);color:var(--mint-d)}
+.cdot.fr{background:var(--butter);color:var(--butter-d)}
+@media (max-width:560px){.cday{min-height:48px}.cdot{font-size:0;height:7px;padding:0;border-radius:4px}}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.calhead b{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600}
+.evrow{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.evrow:first-child{border-top:0}
+.evdate{flex:none;width:54px;border-radius:14px;background:var(--kc);color:var(--kd);text-align:center;padding:6px 0;line-height:1.1}
+.evdate b{display:block;font-family:Fraunces,Georgia,serif;font-size:20px}
+.evdate small{font-size:12px;font-weight:800}
+.evdate.mt{background:var(--mint);color:var(--mint-d)}
+.evdate.fr{background:var(--butter);color:var(--butter-d)}
+.evbody{flex:1;min-width:0}
+.evbody .t{font-weight:800}
+.evbody .m{font-size:13.5px;color:var(--muted)}
+.evbody .d{font-size:14.5px;margin-top:4px;white-space:pre-wrap}
+.ann{background:var(--butter);color:var(--butter-d);border-radius:18px;padding:12px 14px;margin-bottom:10px}
+.ann .t{color:var(--ink);font-weight:600;white-space:pre-wrap;margin:2px 0 6px}
+.ann .m{font-size:12.5px;font-weight:700}
 .alertbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#FDE2E2;color:#9E2424;border-radius:16px;padding:12px 14px;margin:0 0 14px;font-weight:700}
 .nav button.on .ic{background:var(--kc);color:var(--kd)}
 
@@ -211,14 +240,30 @@ input:disabled{opacity:.55}
 .sh-pb{border:0;border-top:2px dashed #ccc;margin:26px -10px}
 .pnote{font-size:13px;color:var(--muted);text-align:center;margin:10px 0 0}
 
+#authgate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+#authgate .gbox{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:26px 22px;display:flex;flex-direction:column;gap:12px}
+#authgate .glogo{width:52px;height:52px;border-radius:16px;background:var(--lav);color:var(--lav-d);display:grid;place-items:center;font:600 20px Fraunces,Georgia,serif;margin:0 auto}
+#authgate h1{font-size:22px;text-align:center}
+#authgate .gsub{margin:0;text-align:center;color:var(--muted);font-weight:700}
+#authgate label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;font-weight:700;color:var(--muted)}
+#authgate input{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;min-height:46px}
+#authgate .gbtn{border:0;background:var(--primary);color:var(--primary-ink);border-radius:12px;padding:12px;font:800 16px Nunito,sans-serif;cursor:pointer}
+#authgate .gbtn[disabled]{opacity:.6}
+#authgate .gbtn2{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:11px;font:800 15px Nunito,sans-serif;cursor:pointer}
+#authgate .glink{border:0;background:none;color:var(--primary);font:700 14.5px Nunito,sans-serif;cursor:pointer;padding:4px}
+#authgate .gsep{text-align:center;color:var(--muted);font-size:13.5px;margin-top:6px}
+#authgate .gnote{margin:0;font-size:13px;color:var(--muted);text-align:center}
+#authgate .gmsg{margin:0;min-height:1em;text-align:center;font-weight:700;color:#C62F2F}
+#authgate .gmsg.ok{color:var(--mint-d)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-weight:700;font-size:14.5px;max-width:min(92vw,420px);text-align:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 
-@media (max-width:899px){.nav .ic{width:34px}.nav button{font-size:9px}}
+@media (max-width:899px){.nav{overflow-x:auto;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}.nav button{flex:1 0 58px;font-size:9.5px}.nav .ic{width:36px}}
 @media (min-width:900px){
   .top{order:-2}
   .nav{position:static;order:-1;width:100%;max-width:1180px;margin:0 auto;background:transparent;border:0;padding:4px 16px 0;gap:6px}
-  .nav button{flex:none;flex-direction:row;gap:8px;padding:0 16px 0 6px;border-radius:14px;height:42px;font-size:15px}
+  .nav{flex-wrap:wrap;overflow:visible}
+  .nav button{flex:none;flex-direction:row;gap:6px;padding:0 10px 0 4px;border-radius:14px;height:42px;font-size:14.5px}
   .nav .ic{width:34px;height:30px}
   .wrap{padding-bottom:110px}
 }
@@ -257,30 +302,219 @@ input:disabled{opacity:.55}
     fs=firebase.firestore();
     ready=new Promise(function(res,rej){
       var done=false;
-      firebase.auth().onAuthStateChanged(function(u){if(u&&!done){done=true;res(u);}});
-      firebase.auth().signInAnonymously().catch(function(e){if(!done){done=true;rej(e);}});
+      firebase.auth().onAuthStateChanged(function(u){
+        if(done)return;
+        if(u&&!u.isAnonymous&&u.emailVerified){done=true;window.__authEmail=String(u.email||'').toLowerCase();hideGate();res(u);return;}
+        if(u&&u.isAnonymous){firebase.auth().signOut();return;}
+        showGate(u&&!u.emailVerified?'verify':'login',u);
+      });
     });
   }catch(e){ready=Promise.reject(e);}
+
+  /* ---------- ekran logowania (e-mail + hasło) ---------- */
+  var gate=null,gmode='login';
+  function gmsg(t,ok){var m=gate&&gate.querySelector('.gmsg');if(m){m.textContent=t||'';m.className='gmsg'+(ok?' ok':'');}}
+  function errPl(e){var c=(e&&e.code)||'';
+    if(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c))return 'Nieprawidłowy e-mail lub hasło.';
+    if(/email-already-in-use/.test(c))return 'Konto z tym adresem już istnieje – zaloguj się albo użyj „Nie pamiętam hasła”.';
+    if(/weak-password/.test(c))return 'Hasło musi mieć co najmniej 6 znaków.';
+    if(/invalid-email/.test(c))return 'To nie wygląda na poprawny adres e-mail.';
+    if(/too-many-requests/.test(c))return 'Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.';
+    if(/network/.test(c))return 'Brak połączenia z internetem.';
+    if(/operation-not-allowed/.test(c))return 'Logowanie e-mailem nie jest jeszcze włączone w Firebase.';
+    return 'Coś poszło nie tak ('+(c||'błąd')+').';}
+  function gateHTML(u){
+    var h='<div class="gbox"><div class="glogo">RR</div><h1>Dokumenty Rady Rodziców</h1>';
+    if(gmode==='verify'){
+      h+='<p class="gsub">Na adres <b>'+(u&&u.email||'')+'</b> wysłaliśmy link potwierdzający. Kliknij go w mailu (sprawdź też SPAM), a potem wróć tutaj.</p>'+
+        '<button class="gbtn" data-g="checkver">Potwierdziłam/em – wchodzę</button><button class="glink" data-g="resend">Wyślij link ponownie</button><button class="glink" data-g="out">Zaloguj się innym kontem</button>';
+    }else{
+      var titles={login:'Zaloguj się',signup:'Pierwsze logowanie – załóż konto',reset:'Nie pamiętam hasła'};
+      h+='<p class="gsub">'+titles[gmode]+'</p>'+
+        '<label>E-mail<input type="email" id="gemail" autocomplete="email" placeholder="adres podany Radzie"></label>'+
+        (gmode!=='reset'?'<label>Hasło<input type="password" id="gpass" autocomplete="'+(gmode==='signup'?'new-password':'current-password')+'" placeholder="'+(gmode==='signup'?'min. 6 znaków':'')+'"></label>':'')+
+        (gmode==='signup'?'<label>Powtórz hasło<input type="password" id="gpass2" autocomplete="new-password"></label>':'')+
+        '<button class="gbtn" data-g="'+gmode+'">'+(gmode==='login'?'Zaloguj się':gmode==='signup'?'Załóż konto':'Wyślij link do zmiany hasła')+'</button>';
+      if(gmode==='login')h+='<button class="glink" data-g="m-reset">Nie pamiętam hasła</button><div class="gsep">Logujesz się pierwszy raz?</div><button class="gbtn2" data-g="m-signup">Załóż konto</button>';
+      else h+='<button class="glink" data-g="m-login">← Wróć do logowania</button>';
+      if(gmode==='signup')h+='<p class="gnote">Użyj adresu e-mail, który administrator wpisał przy Twoim nazwisku w aplikacji.</p>';
+    }
+    return h+'<p class="gmsg"></p></div>';
+  }
+  function showGate(mode,u){
+    gmode=mode||gmode;
+    var mount=function(){
+      if(!gate){gate=document.createElement('div');gate.id='authgate';document.body.appendChild(gate);
+        gate.addEventListener('click',onGate);
+        gate.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'){var b=gate.querySelector('.gbtn');if(b)b.click();}});}
+      var keep=gate.querySelector('#gemail');keep=keep?keep.value:'';
+      gate.innerHTML=gateHTML(u||firebase.auth().currentUser);
+      var em=gate.querySelector('#gemail');if(em){em.value=keep;(keep?gate.querySelector('#gpass')||em:em).focus();}
+    };
+    if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
+  }
+  function hideGate(){if(gate){gate.remove();gate=null;}}
+  function val(id){var x=gate.querySelector('#'+id);return x?x.value.trim():'';}
+  function busy(on){var b=gate&&gate.querySelector('.gbtn');if(b){b.disabled=on;}}
+  function onGate(e){
+    var b=e.target.closest('[data-g]');if(!b)return;var g=b.dataset.g,A=firebase.auth();
+    if(g.indexOf('m-')===0){showGate(g.slice(2));return;}
+    if(g==='login'){var em=val('gemail').toLowerCase(),pw=gate.querySelector('#gpass').value;if(!em||!pw){gmsg('Wpisz e-mail i hasło.');return;}busy(true);
+      A.signInWithEmailAndPassword(em,pw).catch(function(x){busy(false);gmsg(errPl(x));});return;}
+    if(g==='signup'){var em2=val('gemail').toLowerCase(),p1=gate.querySelector('#gpass').value,p2=gate.querySelector('#gpass2').value;
+      if(!em2||!p1){gmsg('Wpisz e-mail i hasło.');return;}if(p1!==p2){gmsg('Hasła się różnią.');return;}busy(true);
+      A.createUserWithEmailAndPassword(em2,p1).then(function(c){A.languageCode='pl';return c.user.sendEmailVerification();}).then(function(){showGate('verify');gmsg('Wysłaliśmy link potwierdzający.',true);}).catch(function(x){busy(false);gmsg(errPl(x));});return;}
+    if(g==='reset'){var em3=val('gemail').toLowerCase();if(!em3){gmsg('Wpisz swój e-mail.');return;}busy(true);A.languageCode='pl';
+      A.sendPasswordResetEmail(em3).then(function(){busy(false);gmsg('Jeśli konto istnieje, wysłaliśmy link do ustawienia nowego hasła. Sprawdź skrzynkę (i SPAM).',true);}).catch(function(x){busy(false);gmsg(errPl(x));});return;}
+    if(g==='checkver'){var u=A.currentUser;if(!u)return;u.reload().then(function(){if(A.currentUser.emailVerified){return A.currentUser.getIdToken(true).then(function(){location.reload();});}gmsg('Adres nie jest jeszcze potwierdzony – kliknij link w mailu.');});return;}
+    if(g==='resend'){var u2=A.currentUser;if(!u2)return;A.languageCode='pl';u2.sendEmailVerification().then(function(){gmsg('Wysłano ponownie.',true);}).catch(function(x){gmsg(errPl(x));});return;}
+    if(g==='out'){A.signOut().then(function(){showGate('login');});return;}
+  }
+  window.__fbSignOut=function(){firebase.auth().signOut().then(function(){location.reload();});};
 
   function warn(e){
     try{console.error('Firebase:',e);
     var b=document.getElementById('fbwarn');
     if(!b){b=document.createElement('div');b.id='fbwarn';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99;background:#FADBE6;color:#9B3560;font:700 14px Nunito,sans-serif;padding:8px 14px;text-align:center';document.body.appendChild(b);}
-    b.textContent='Brak połączenia z bazą danych – zmiany mogą się nie zapisać. Sprawdź internet i odśwież stronę.';}catch(x){}
+    b.textContent=(e&&e.code==='permission-denied')?'Twoje konto nie ma dostępu do danych. Poproś administratora o dopisanie Twojego adresu e-mail w zakładce Członkowie.':'Brak połączenia z bazą danych – zmiany mogą się nie zapisać. Sprawdź internet i odśwież stronę.';}catch(x){}
   }
   if(ready)ready.catch(warn);
-  function wrapSnap(s){
-    var d=null;
-    if(s.exists){var raw=s.data();try{d=raw&&typeof raw.json==='string'?JSON.parse(raw.json):raw;}catch(e){d=null;}}
-    return {exists:!!(s.exists&&d),data:function(){return d;}};
+  /* ===== dane rozdzielone: app/pub (wszyscy członkowie), app/priv (tylko Prezydium),
+     votes/* (każdy swój głos), notes/* (notatki) ===== */
+  var REP='Przedstawiciel klasy';
+  var lastAccess='',wasAdmin=false;
+  ready.then(function(){return fs.doc('config/access').get();}).then(function(x){var d=x&&x.exists?x.data():null;if(d&&window.__authEmail&&(d.admins||[]).indexOf(window.__authEmail)>=0)wasAdmin=true;}).catch(function(){});
+  function low(x){return String(x||'').trim().toLowerCase();}
+  function syncAccess(obj){
+    try{
+      if(!obj||!obj.members||!isPriv)return;
+      var ok=function(x){return /@/.test(x);};
+      var ems=obj.members.map(function(m){return low(m.email);}).filter(ok);
+      var prv=obj.members.filter(function(m){return m.func!==REP;}).map(function(m){return low(m.email);}).filter(ok);
+      var adm=obj.members.filter(function(m){return m.id===(obj.settings||{}).adminId;}).map(function(m){return low(m.email);}).filter(ok);
+      var me=window.__authEmail;
+      if(me&&wasAdmin){if(ems.indexOf(me)<0)ems.push(me);if(prv.indexOf(me)<0)prv.push(me);if(adm.indexOf(me)<0)adm.push(me);}
+      if(!adm.length)return;
+      ems.sort();prv.sort();var key=JSON.stringify([ems,prv,adm]);if(key===lastAccess)return;
+      fs.doc('config/access').set({emails:ems,priv:prv,admins:adm}).then(function(){lastAccess=key;}).catch(function(){});
+    }catch(e){}
   }
+
+  var C={pub:null,priv:null,votes:{},notes:{}},isPriv=false,loaded=false;
+  var lastCanon=null,listeners=[],inflight2=0,pending=false;
+  function J(x){return JSON.parse(JSON.stringify(x==null?null:x));}
+  function sortDeep(x){
+    if(Array.isArray(x))return x.map(sortDeep);
+    if(x&&typeof x==='object'){var o={};Object.keys(x).sort().forEach(function(k){if(x[k]!==undefined&&x[k]!==null)o[k]=sortDeep(x[k]);});return o;}
+    return x;
+  }
+  function canon(d){
+    d=J(d)||{};
+    (d.resolutions||[]).forEach(function(r){if(!r.poll)delete r.poll;});
+    d.notes=(d.notes||[]).map(function(n){delete n.email;return n;}).sort(function(a,b){return String(a.id).localeCompare(String(b.id));});
+    ['flags','settings','members','events','ann','docs','meetings','resolutions','reports'].forEach(function(k){if(d[k]==null)d[k]=(k==='flags'||k==='settings')?{}:[];});
+    return JSON.stringify(sortDeep(d));
+  }
+  function META(r){return {body:r.body||'',mode:r.mode||'',cel:r.cel||'',kwota:r.kwota||'',subject:r.subject||'',date:r.date||'',status:r.status||'',num:r.num==null?'':r.num,year:r.year==null?'':r.year};}
+  function merge(){
+    var pub=C.pub||{},prv=C.priv||{},polls=pub.polls||{};
+    var d={v:1,flags:prv.flags||{},settings:J(pub.settings)||{},members:J(pub.members)||[],events:J(pub.events)||[],ann:J(pub.ann)||[],docs:J(pub.docs)||[],
+      meetings:J(prv.meetings)||[],resolutions:[],reports:J(prv.reports)||[],notes:[]};
+    if(isPriv){
+      d.resolutions=(J(prv.resolutions)||[]).map(function(r){var p=polls[r.id];if(p)r.poll={open:!!p.open,votes:{}};return r;});
+    }else{
+      d.resolutions=Object.keys(polls).map(function(id){var p=polls[id];var r=J(p.meta)||{};r.id=id;r.attachments=[];r.poll={open:!!p.open,votes:{}};return r;});
+    }
+    Object.keys(C.votes).forEach(function(k){
+      var v=C.votes[k];var m=d.members.find(function(x){return x.id===v.member;});
+      if(!m||low(m.email)!==low(v.email))return;
+      var r=d.resolutions.find(function(x){return x.id===v.res;});
+      if(r&&r.poll)r.poll.votes[v.member]=v.v;
+    });
+    d.notes=Object.keys(C.notes).map(function(k){return J(C.notes[k]);});
+    return d;
+  }
+  function deliver(){
+    if(!loaded)return;
+    if(inflight2){pending=true;return;}
+    var d=merge(),c=canon(d);
+    if(c===lastCanon)return;
+    lastCanon=c;
+    listeners.forEach(function(cb){cb({exists:true,data:function(){return J(d);}});});
+  }
+  function track(p){inflight2++;return p.then(function(){var b=document.getElementById('fbwarn');if(b)b.remove();}).catch(function(e){warn(e);}).finally(function(){inflight2--;if(!inflight2&&pending){pending=false;deliver();}});}
+  function parseDoc(s){if(!s.exists)return null;var raw=s.data();try{return raw&&typeof raw.json==='string'?JSON.parse(raw.json):raw;}catch(e){return null;}}
+  function putDoc(path,obj){return fs.doc(path).set({json:JSON.stringify(obj),updated:firebase.firestore.FieldValue.serverTimestamp()});}
+  function vkey(res,mem){return String(res)+'~'+String(mem);}
+
+  function splitAndWrite(obj,initial){
+    var me=window.__authEmail,ps=[];
+    var mm=(obj.members||[]).find(function(m){return low(m.email)===me;});
+    if(isPriv){
+      var polls={};
+      (obj.resolutions||[]).forEach(function(r){if(r.poll)polls[r.id]={open:!!r.poll.open,meta:META(r)};});
+      var pub={settings:obj.settings||{},members:obj.members||[],events:obj.events||[],ann:obj.ann||[],docs:obj.docs||[],polls:polls};
+      var prv={flags:obj.flags||{},meetings:obj.meetings||[],reports:obj.reports||[],
+        resolutions:(obj.resolutions||[]).map(function(r){var c=J(r);delete c.poll;return c;})};
+      if(JSON.stringify(pub)!==JSON.stringify(C.pub)){C.pub=J(pub);ps.push(putDoc('app/pub',pub));}
+      if(JSON.stringify(prv)!==JSON.stringify(C.priv)){C.priv=J(prv);ps.push(putDoc('app/priv',prv));}
+    }
+    /* głosy: przy migracji wszystkie (robi to administrator), na co dzień tylko własny */
+    (obj.resolutions||[]).forEach(function(r){
+      var vs=(r.poll&&r.poll.votes)||{};
+      Object.keys(vs).forEach(function(mid){
+        if(!initial&&(!mm||mid!==mm.id))return;
+        var m=(obj.members||[]).find(function(x){return x.id===mid;});if(!m||!low(m.email)&&!initial)return;
+        var k=vkey(r.id,mid),cur=C.votes[k];
+        if(cur&&cur.v===vs[mid])return;
+        var doc={res:r.id,member:mid,v:vs[mid],email:initial?low(m.email):me};
+        if(!doc.email)return;
+        C.votes[k]=doc;ps.push(fs.collection('votes').doc(k).set(doc));
+      });
+    });
+    /* notatki */
+    var ids={};
+    (obj.notes||[]).forEach(function(n){
+      ids[n.id]=1;var cur=C.notes[n.id];var nn=J(n);nn.email=(cur&&cur.email)||me;
+      if(!cur){C.notes[n.id]=nn;ps.push(fs.collection('notes').doc(n.id).set(nn));}
+      else if(isPriv&&JSON.stringify(nn)!==JSON.stringify(cur)){C.notes[n.id]=nn;ps.push(fs.collection('notes').doc(n.id).set(nn));}
+    });
+    if(isPriv)Object.keys(C.notes).forEach(function(id){if(!ids[id]){delete C.notes[id];ps.push(fs.collection('notes').doc(id).delete());}});
+    return Promise.all(ps);
+  }
+
+  var loading=null;
+  function loadAll(){
+    if(loading)return loading;
+    loading=ready.then(function(){
+      return fs.doc('app/priv').get().then(function(s){isPriv=true;C.priv=parseDoc(s);},function(){isPriv=false;});
+    }).then(function(){
+      return fs.doc('app/pub').get().then(function(s){C.pub=parseDoc(s);});
+    }).then(function(){
+      if(C.pub||!isPriv)return;
+      /* jednorazowe przeniesienie ze starego zapisu app/data */
+      return fs.doc('app/data').get().then(function(s){var old=parseDoc(s);if(!old)return;inflight2++;return splitAndWrite(old,true).finally(function(){inflight2--;});}).catch(function(e){console.warn('migracja',e);});
+    }).then(function(){
+      return Promise.all([
+        fs.collection('votes').get().then(function(q){q.forEach(function(x){C.votes[x.id]=x.data();});}),
+        fs.collection('notes').get().then(function(q){q.forEach(function(x){C.notes[x.id]=x.data();});})
+      ]);
+    }).then(function(){
+      loaded=true;
+      var subs=function(path,key){fs.doc(path).onSnapshot(function(s){if(s.metadata.hasPendingWrites)return;C[key]=parseDoc(s);deliver();},warn);};
+      subs('app/pub','pub');if(isPriv)subs('app/priv','priv');
+      ['votes','notes'].forEach(function(col){fs.collection(col).onSnapshot(function(q){if(q.metadata.hasPendingWrites)return;var o={};q.forEach(function(x){o[x.id]=x.data();});C[col]=o;deliver();},warn);});
+    }).catch(function(e){warn(e);throw e;});
+    return loading;
+  }
+  window.__isPriv=function(){return isPriv;};
+
   var dbApi={
-    doc:function(path){
-      var ref=fs.doc(path);
+    doc:function(){
       return {
-        get:function(){return ref.get().then(wrapSnap).catch(function(e){warn(e);throw e;});},
-        set:function(obj){var js=JSON.stringify(obj);written.push(js);if(written.length>40)written.shift();inflight++;return ref.set({json:js,updated:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){var b=document.getElementById('fbwarn');if(b)b.remove();}).catch(function(e){warn(e);throw e;}).finally(function(){inflight--;if(!inflight&&held){var h=held;held=null;h();}});},
-        onSnapshot:function(cb,err){return ref.onSnapshot(function(s){if(s.metadata&&s.metadata.hasPendingWrites)return;var raw=s.exists?(s.data()||{}).json:null;if(raw&&written.indexOf(raw)>=0)return;var go=function(){cb(wrapSnap(s));};if(inflight){held=go;return;}go();},function(e){warn(e);if(err)err(e);});}
+        get:function(){return loadAll().then(function(){var d=merge();lastCanon=canon(d);var empty=!C.pub&&!C.priv;return {exists:!empty,data:function(){return J(d);}};});},
+        set:function(obj){syncAccess(obj);lastCanon=canon(obj);return track(splitAndWrite(obj,false));},
+        onSnapshot:function(cb){listeners.push(cb);return function(){};}
       };
     }
   };
@@ -368,6 +602,7 @@ input:disabled{opacity:.55}
 })();
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.js"></script>
 <script>
 (function(){
@@ -409,7 +644,7 @@ function defaults(){
       {id:uid(),name:'Agnieszka Lustyk',func:'Zastępca przewodniczącej',cls:'',g:'f',pin:'',canEdit:true},
       {id:uid(),name:'Anna Dwojak',func:'Sekretarz',cls:'',g:'f',pin:'',canEdit:true}
     ],
-    meetings:[],resolutions:[],reports:[],notes:[],docs:[]};
+    meetings:[],resolutions:[],reports:[],notes:[],docs:[],events:[],ann:[]};
 }
 
 /* ---------- ludzie i podpisy ---------- */
@@ -740,7 +975,7 @@ function normalize(d){
   const b=defaults();
   if(!d||typeof d!=='object')return b;
   d=deepClone(d);
-  return {v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:(d.members||[]).map(m=>Object.assign({pin:'',canEdit:true},m)),meetings:d.meetings||[],resolutions:fixResYears((d.resolutions||[]).map(r=>Object.assign({status:'przyjeta',attachments:[]},r))),reports:d.reports||[],notes:d.notes||[],docs:d.docs||[]};
+  return {v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:(d.members||[]).map(m=>Object.assign({pin:'',canEdit:true},m)),meetings:d.meetings||[],resolutions:fixResYears((d.resolutions||[]).map(r=>Object.assign({status:'przyjeta',attachments:[]},r))),reports:d.reports||[],notes:d.notes||[],docs:d.docs||[],events:d.events||[],ann:d.ann||[]};
 }
 function load(){
   try{const s=storageOk?localStorage.getItem(KEY):null;if(s)return normalize(JSON.parse(s));}catch(e){}
@@ -753,6 +988,7 @@ db=defaults();
 let cloud=null,canWrite=true,cloudReady=false;
 let saveT,lastPushed=null;
 function save(){
+  if(ui.loadFailed||!canWrite)return;
   clearTimeout(saveT);
   saveT=setTimeout(()=>{
     try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){storageOk=false;}
@@ -774,7 +1010,7 @@ async function boot(){
       if(snap.exists){db=normalize(snap.data());}
       else if(canWrite){db=load();cloud.doc('app/data').set(db).catch(()=>{});}
       else{db=defaults();}
-    }catch(e){db=load();canWrite=canWrite&&true;}
+    }catch(e){db=defaults();canWrite=false;ui.loadFailed=true;}
     try{
       cloud.doc('app/data').onSnapshot(snap=>{
         if(!snap.exists)return;
@@ -790,8 +1026,8 @@ async function boot(){
   }
   ui.readOnly=!canWrite;
   ui.noteDraft.author=loadAuthorPref();
-  ui.voterId=loadVoterId();
-  if(!db.settings.adminId&&db.members.length){
+  ui.voterId='';{const em=window.__authEmail;const mm=em?db.members.find(x=>String(x.email||'').trim().toLowerCase()===em):null;if(mm)ui.voterId=mm.id;}
+  if(!ui.loadFailed&&!db.settings.adminId&&db.members.length){
     const sec=db.members.find(m=>/^Sekretarz/.test(m.func||''))||db.members[0];
     db.settings.adminId=sec.id;
     if(canWrite)save();
@@ -799,7 +1035,7 @@ async function boot(){
   cloudReady=true;
   render();
 }
-function curMember(){return db.members.find(x=>x.id===ui.voterId)||null;}
+function curMember(){const em=window.__authEmail;if(em){return db.members.find(x=>String(x.email||'').trim().toLowerCase()===em)||null;}return db.members.find(x=>x.id===ui.voterId)||null;}
 function isAdmin(){const m=curMember();return !!(m&&db.settings.adminId&&m.id===db.settings.adminId);}
 function isChairRole(m){return !!(m&&/^(Przewodnicz|Zastępca przewodnicz)/.test(m.func||''));}
 function canEditDocs(){if(ui.readOnly)return false;const m=curMember();return !!(m&&(m.canEdit||isAdmin()||isChairRole(m)));}
@@ -819,9 +1055,10 @@ const ICONS={
   czlonkowie:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.6 3.3-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.5c2.6 0 4.5 1.5 5 4.5"/>',
   dokumenty:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   glosowanie:'<path d="M4 12h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M8 12V4h8v8"/><path d="m10 8 1.5 1.5L14 7"/>',
+  kalendarz:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/><circle cx="8.5" cy="15" r="1.3"/><circle cx="15.5" cy="15" r="1.3"/>',
   ustawienia:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
 };
-const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['glosowanie','Głosowanie','k-resolution'],['sprawozdania','Sprawozdania','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
+const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['glosowanie','Głosowanie','k-resolution'],['kalendarz','Kalendarz','k-cal'],['sprawozdania','Sprawozdania','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
 const KIND_CLASS={meeting:'k-meeting',resolution:'k-resolution',report:'k-report',doc:'k-doc'};
 const REPORT_NAMES={dzialalnosc:'Sprawozdanie z działalności',finansowe:'Sprawozdanie finansowe',zebranie:'Sprawozdanie z zebrania'};
 
@@ -835,6 +1072,8 @@ function resolveRoot(s){
   if(s==='rec')return getRec();
   if(s==='bulk')return ui.bulk;
   if(s==='notedraft')return ui.noteDraft;
+  if(s==='evdraft')return ui.evDraft;
+  if(s==='anndraft')return ui.annDraft;
   if(s==='pin')return ui;
   if(s&&s.indexOf('member:')===0)return db.members.find(x=>x.id===s.slice(7));
   return null;
@@ -928,12 +1167,121 @@ function topHtml(){
 function identified(){return !!curMember();}
 function idBar(){
   const me=curMember();
-  if(me&&(ui.readOnly||canEditDocs()))return '';
+  if(me)return '';
   if(me)return '<div class="card" data-root="pin" style="margin-bottom:16px"><h3>Zalogowano jako: '+esc(me.name)+'</h3><p class="hint">Możesz przeglądać wszystko, pisać w Notatniku i głosować. Dostęp do edycji dokumentów przyznaje administrator ('+esc(adminName())+').</p><button class="btn small ghost" data-act="logout">Wyloguj</button></div>';
-  let h='<div class="card" data-root="pin" style="margin-bottom:16px"><h3>Zaloguj się</h3><p class="hint">Wpisz swój indywidualny PIN, aby zobaczyć dokumenty. Administrator będzie też wiedział, kto wprowadza dane, głosuje lub pisze notatki.</p><div class="g2"><input type="password" data-bind="voterPinInput" placeholder="Twój PIN" value="'+esc(ui.voterPinInput||'')+'"><button class="btn primary" data-act="login">Zaloguj się</button></div>';
-  if(adminNeedsSetup())h+='<p class="hint" style="margin-top:10px">Administrator („'+esc(adminName())+'”) nie ma jeszcze ustawionego PIN-u. Jeśli to Ty, zaloguj się bez PIN-u, żeby go ustawić w zakładce Członkowie.</p><button class="btn" data-act="claimadmin">Zaloguj się jako '+esc(adminName())+'</button>';
-  h+='</div>';
+  return '<div class="card" style="margin-bottom:16px"><h3>Brak przypisania do członka Rady</h3><p class="hint">Jesteś zalogowana/y jako <b>'+esc(window.__authEmail||'')+'</b>, ale tego adresu nie ma na liście członków. Poproś administratora ('+esc(adminName())+'), aby wpisał ten adres przy Twoim nazwisku w zakładce Członkowie.</p><button class="btn small" data-act="logout">Wyloguj</button></div>';
+}
+function isRep(m){return !!m&&m.func==='Przedstawiciel klasy';}
+const REP_TABS=['pulpit','glosowanie','kalendarz','dokumenty','notatnik','czlonkowie'];
+function tabAllowed(t){return !isRep(curMember())||REP_TABS.indexOf(t)>=0;}
+function canPlan(){const m=curMember();if(ui.readOnly||!m)return false;return isAdmin()||isChairRole(m)||m.func==='Sekretarz';}
+const MONF=['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
+const EVTYPES=[['impreza','Impreza / wydarzenie'],['wolne','Dzień wolny od zajęć'],['termin','Termin / przypomnienie']];
+function calItems(){
+  const out=[];
+  (db.events||[]).forEach(e=>{if(!e.date)return;out.push({id:e.id,kind:e.type==='wolne'?'fr':'ev',date:e.date,end:e.dateEnd&&e.dateEnd>e.date?e.dateEnd:e.date,title:e.title||'Wydarzenie',time:e.time||'',place:e.place||'',desc:e.desc||'',src:e});});
+  db.meetings.forEach(m=>{if(!m.date)return;const t=m.type==='rada'?'Zebranie Rady Rodziców':m.type==='prezydium'?'Zebranie Prezydium':(m.customType||'Spotkanie');out.push({id:m.id,kind:'mt',date:m.date,end:m.date,title:t,time:m.time||'',place:m.place||'',desc:'',meeting:true});});
+  return out.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+}
+function isoOf(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
+function itemsOn(iso,items){return items.filter(i=>i.date<=iso&&i.end>=iso);}
+function evRow(i,withActs){
+  const p=i.date.split('-'),cls=i.kind==='mt'?' mt':i.kind==='fr'?' fr':'';
+  const meta=[i.end!==i.date?'do '+fmtDate(i.end):'',i.time,i.place].filter(Boolean).join(' · ');
+  let h='<div class="evrow"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+'</div>'+
+    '<div class="m">'+(i.kind==='mt'?'Zebranie':i.kind==='fr'?'Dzień wolny od zajęć':'Wydarzenie')+(meta?' · '+esc(meta):'')+'</div>'+(i.desc?'<div class="d">'+esc(i.desc)+'</div>':'');
+  if(withActs&&i.meeting&&!isRep(curMember()))h+='<p style="margin:6px 0 0"><button class="btn small" data-act="open" data-kind="meeting" data-id="'+i.id+'">Otwórz zebranie</button></p>';
+  if(withActs&&!i.meeting&&canPlan()){
+    h+='<div class="moreacts" style="margin-top:6px"><button class="btn small" data-act="evedit" data-id="'+i.id+'">Zmień</button>'+
+      (ui.confirm==='e'+i.id?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn small warn" data-act="evdel" data-id="'+i.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':'<button class="btn small ghost" data-act="evdel" data-id="'+i.id+'">Usuń</button>')+'</div>';
+  }
+  return h+'</div></div>';
+}
+function evForm(){
+  const d=ui.evDraft,r='data-root="evdraft"';
+  return '<div class="card" '+r+'><h3>'+(d.id?'Zmień wydarzenie':'Nowe wydarzenie')+'</h3>'+
+    inp(d,'Nazwa','title',{ph:'np. Dzień Dyni, Andrzejki, Festyn rodzinny'})+
+    sel(d,'Rodzaj','type',EVTYPES)+
+    '<div class="g2">'+inp(d,'Data','date',{type:'date'})+inp(d,'Do dnia (jeśli kilka dni)','dateEnd',{type:'date'})+'</div>'+
+    '<div class="g2">'+inp(d,'Godzina (opcjonalnie)','time',{type:'time'})+inp(d,'Miejsce (opcjonalnie)','place',{ph:'np. sala gimnastyczna'})+'</div>'+
+    ta(d,'Opis (opcjonalnie)','desc',3,'np. Prosimy o upieczenie ciast – zbiórka do 9:00 w świetlicy')+
+    '<div class="moreacts"><button class="btn primary" data-act="evsave">'+(d.id?'Zapisz zmiany':'Dodaj do kalendarza')+'</button><button class="btn" data-act="evcancel">Anuluj</button></div></div>';
+}
+function kalendarzHtml(){
+  const today=todayISO();
+  if(!ui.calM){ui.calM=today.slice(0,7);}
+  const y=+ui.calM.slice(0,4),mo=+ui.calM.slice(5,7)-1;
+  const items=calItems();
+  let h=head('Kalendarz','Imprezy, zebrania i dni wolne – dla wszystkich',canPlan()&&!ui.evDraft?'<button class="btn primary" data-act="evnew">Dodaj wydarzenie</button>':'');
+  if(ui.evDraft)h+=evForm();
+  const first=new Date(y,mo,1),start=(first.getDay()+6)%7,dim=new Date(y,mo+1,0).getDate();
+  h+='<div class="card"><div class="calhead"><button class="btn small" data-act="calprev" aria-label="Poprzedni miesiąc">‹</button><b>'+cap(MONF[mo])+' '+y+'</b><button class="btn small" data-act="calnext" aria-label="Następny miesiąc">›</button></div><div class="calgrid">'+
+    ['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(x=>'<div class="dow">'+x+'</div>').join('');
+  for(let c=0;c<42;c++){
+    const dt=new Date(y,mo,1-start+c);if(c>=35&&dt.getMonth()!==mo)break;
+    const iso=isoOf(dt.getFullYear(),dt.getMonth(),dt.getDate()),its=itemsOn(iso,items);
+    h+='<button class="cday'+(dt.getMonth()!==mo?' out':'')+(iso===today?' today':'')+(ui.calDay===iso?' pick':'')+'" data-act="calday" data-v="'+iso+'"><span class="dn">'+dt.getDate()+'</span>'+its.slice(0,3).map(i=>'<span class="cdot '+i.kind+'">'+esc(i.title)+'</span>').join('')+'</button>';
+  }
+  h+='</div></div>';
+  if(ui.calDay){
+    const its=itemsOn(ui.calDay,items);
+    h+='<div class="card"><h3>'+fmtDate(ui.calDay)+'</h3>'+(its.length?its.map(i=>evRow(i,true)).join(''):'<p class="hint" style="margin:0">Brak wydarzeń tego dnia.</p>')+
+      (canPlan()&&!ui.evDraft?'<div class="moreacts" style="margin-top:8px"><button class="btn small" data-act="evnew" data-v="'+ui.calDay+'">Dodaj wydarzenie w tym dniu</button></div>':'')+'</div>';
+  }
+  const up=items.filter(i=>i.end>=today).slice(0,12);
+  h+='<h3 class="h3">Najbliższe</h3><div class="card">'+(up.length?up.map(i=>evRow(i,true)).join(''):'<p class="hint" style="margin:0">Nie ma zaplanowanych wydarzeń.'+(canPlan()?' Dodaj pierwsze przyciskiem powyżej.':'')+'</p>')+'</div>';
   return h;
+}
+function annHtml(){
+  const today=todayISO();
+  const list=(db.ann||[]).filter(a=>!a.until||a.until>=today).sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+  let h='';
+  if(canPlan()){
+    if(ui.annDraft){
+      const d=ui.annDraft;
+      h+='<div class="card" data-root="anndraft"><h3>Nowe ogłoszenie</h3>'+ta(d,'Treść','text',3,'np. Zbiórka ciast na Dzień Dyni – do 30.10 w sekretariacie')+inp(d,'Pokazuj do dnia (opcjonalnie)','until',{type:'date'})+
+        '<div class="moreacts"><button class="btn primary" data-act="annsave">Opublikuj</button><button class="btn" data-act="anncancel">Anuluj</button></div></div>';
+    }
+  }
+  if(list.length||canPlan()){
+    h+='<div class="card"><div class="nhead" style="margin-bottom:10px"><h3 style="margin:0">Ogłoszenia</h3>'+(canPlan()&&!ui.annDraft?'<button class="btn small" data-act="annnew">+ Dodaj</button>':'')+'</div>'+
+      (list.length?list.map(a=>'<div class="ann"><p class="t">'+esc(a.text)+'</p><div class="m">'+esc(a.author||'')+(a.created?' · '+esc(fmtWhen(a.created)):'')+(a.until?' · do '+fmtDate(a.until):'')+
+        (canPlan()?(ui.confirm==='a'+a.id?' <span class="confirmrow"><button class="btn small warn" data-act="anndel" data-id="'+a.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':' · <button class="btn small ghost" style="padding:2px 8px" data-act="anndel" data-id="'+a.id+'">Usuń</button>'):'')+'</div></div>').join(''):'<p class="hint" style="margin:0">Brak ogłoszeń. Dodane tu ogłoszenie zobaczy każdy po zalogowaniu.</p>')+'</div>';
+  }
+  return h;
+}
+function upcomingCard(){
+  const today=todayISO(),up=calItems().filter(i=>i.end>=today).slice(0,3);
+  if(!up.length)return '';
+  return '<div class="card k-cal"><div class="nhead" style="margin-bottom:4px"><h3 style="margin:0">Najbliższe wydarzenia</h3><button class="btn small" data-act="tab" data-v="kalendarz">Kalendarz</button></div>'+up.map(i=>evRow(i,false)).join('')+'</div>';
+}
+function mailCfg(){const m=(db.settings&&db.settings.mail)||{};return (m.service&&m.template&&m.key)?m:null;}
+function appLink(){return location.origin+location.pathname;}
+async function sendMail(list,subject,message){
+  const cfg=mailCfg();
+  if(!cfg){return {ok:false,why:'nocfg'};}
+  if(!window.emailjs){return {ok:false,why:'nolib'};}
+  const me=curMember();
+  const to=(me&&me.email)||list[0];
+  try{
+    await emailjs.send(cfg.service,cfg.template,{to_email:to,bcc:list.join(','),subject:subject,message:message,link:appLink(),from_name:'Rada Rodziców – '+(me?me.name:'')},{publicKey:cfg.key});
+    return {ok:true};
+  }catch(e){console.error('EmailJS',e);return {ok:false,why:(e&&(e.text||e.status))||'błąd'};}
+}
+function voteMailText(r,reminder){
+  const t=voteTitle(r);
+  return {subject:(reminder?'Przypomnienie: ':'')+'Głosowanie Rady Rodziców – '+t,
+    message:(reminder?'Przypominamy, że nie oddano jeszcze Twojego głosu.\n\n':'Rozpoczęło się głosowanie online.\n\n')+'Wniosek: '+t+(r.subject?'\n'+subjectOf(r):'')+'\nGłosują: '+(r.body==='rada'?'członkowie Rady Rodziców':'członkowie Prezydium')+'\n\nZaloguj się do aplikacji i zagłosuj w zakładce „Głosowanie”.'};
+}
+async function notifyVote(r,reminder){
+  const me=curMember();
+  const list=db.members.filter(m=>canVote(m,r)&&m.email&&(!me||m.id!==me.id)&&(!reminder||!(r.poll&&r.poll.votes||{})[m.id])).map(m=>String(m.email).trim());
+  if(!list.length){if(reminder)toast('Wszyscy uprawnieni już zagłosowali.');return;}
+  const tx=voteMailText(r,reminder);
+  const res=await sendMail(list,tx.subject,tx.message);
+  if(res.ok)toast((reminder?'Wysłano przypomnienie':'Wysłano powiadomienie')+' do '+list.length+' os.');
+  else if(res.why==='nocfg'){if(isAdmin())toast('Powiadomienia e-mail nie są skonfigurowane (Ustawienia).');}
+  else toast('Nie udało się wysłać maili ('+res.why+').');
 }
 function canVote(m,r){if(!m)return false;return r.body==='rada'?true:PRES.indexOf(m.func)>=0;}
 function openPolls(){return db.resolutions.filter(r=>r.poll&&r.poll.open);}
@@ -950,7 +1298,8 @@ function voteItem(r){
     h+='<div class="moreacts">'+[['za','Za'],['przeciw','Przeciw'],['wstrz','Wstrzymuję się']].map(o=>'<button class="btn'+(my===o[0]?' primary':'')+'" data-act="votecast" data-id="'+r.id+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
   }else h+='<p class="hint">Nie bierzesz udziału w tym głosowaniu.</p>';
   h+='<p class="hint" style="margin:10px 0 0">Oddane głosy: '+t.total+(r.body!=='rada'&&voters.length?' z '+voters.length:'')+' – za '+t.za+', przeciw '+t.przeciw+', wstrzymało się '+t.wstrz+'.'+(missing.length&&r.body!=='rada'?' Brakuje głosu: '+missing.map(m=>esc(m.name)).join(', ')+'.':'')+'</p>';
-  h+='<p style="margin:10px 0 0"><button class="btn small" data-act="open" data-kind="resolution" data-id="'+r.id+'">Szczegóły wniosku'+(locked()?'':' i zakończenie głosowania')+'</button></p>';
+  if(canPlan()&&mailCfg()&&missing.length)h+='<p style="margin:10px 0 0"><button class="btn small" data-act="pollremind" data-id="'+r.id+'">Wyślij przypomnienie e-mail do niegłosujących</button></p>';
+  if(!isRep(me))h+='<p style="margin:10px 0 0"><button class="btn small" data-act="open" data-kind="resolution" data-id="'+r.id+'">Szczegóły wniosku'+(locked()?'':' i zakończenie głosowania')+'</button></p>';
   return h+'</div>';
 }
 function glosowanieHtml(){
@@ -965,7 +1314,7 @@ function glosowanieHtml(){
   return h;
 }
 function navHtml(){
-  const tabs=TABS.filter(t=>isAdmin()||t[0]!=='ustawienia');
+  const tabs=TABS.filter(t=>(isAdmin()||t[0]!=='ustawienia')&&tabAllowed(t[0]));
   return '<nav class="nav" aria-label="Sekcje">'+tabs.map(t=>'<button class="'+t[2]+(ui.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(ui.tab===t[0]?' aria-current="page"':'')+'><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[t[0]]+'</svg>'+(t[0]==='glosowanie'&&pendingVotes().length?'<span class="nbadge" aria-label="Czeka na Twój głos">!</span>':'')+'</span><span class="lbl">'+t[1]+'</span></button>').join('')+'</nav>';
 }
 const head=(h,sub,btn)=>'<div class="pagehead"><div><h2>'+h+'</h2><p>'+sub+'</p></div>'+(btn||'')+'</div>';
@@ -1019,6 +1368,7 @@ function repCard(r){
 }
 function statBox(n,l){return '<div class="stat"><b>'+esc(n)+'</b><span>'+esc(l)+'</span></div>';}
 function pulpitHtml(){
+  if(isRep(curMember())){let r=head('Pulpit','Witaj, '+esc(curMember().name)+'! Najważniejsze informacje Rady Rodziców','');r+=annHtml()+upcomingCard();const op=openPolls().filter(x=>canVote(curMember(),x));r+=op.length?'<div class="card"><h3>Trwające głosowania</h3><p class="hint" style="margin:0 0 8px">Głosowań, w których bierzesz udział: '+op.length+'.</p><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>':'';if(r.indexOf('class="card')<0)r+=emptyBox('Na razie nic nowego','Tu pojawią się ogłoszenia Prezydium i najbliższe wydarzenia.','');return r;}
   const ms=db.meetings.filter(m=>inSY(m.date,viewYear)),rs=db.resolutions.filter(r=>inSY(r.date,viewYear)||(blank(r.year)&&false)),
     rp=db.reports.filter(r=>r.sy&&syFromLabel(r.sy)===viewYear);
   const rsAll=db.resolutions.filter(r=>ui.allYears?true:num(r.year)===viewYear);
@@ -1029,6 +1379,7 @@ function pulpitHtml(){
   const lastRes=[...rsAll].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,3);
   let h=yearBar();
   h+=head('Pulpit','Rok szkolny '+esc(syLabel(viewYear))+' (wrzesień–czerwiec) – wszystko w jednym miejscu','');
+  h+=annHtml()+upcomingCard();
   h+='<div class="stats">'+statBox(ms.length,'zebrań')+statBox(rs.length,'uchwał')+statBox(money(kw)+' zł','wydatków poza preliminarzem')+statBox(rp.length,'sprawozdań')+'</div>';
   if(!locked()){
     h+='<div class="card"><h3>Szybkie dodawanie</h3><div class="moreacts">'+
@@ -1063,6 +1414,7 @@ function listHtml(){
   if(!identified()){
     return h+'<p class="hint" style="text-align:center;margin-top:4px">Zaloguj się powyżej, aby zobaczyć zawartość.</p></main>';
   }
+  if(!tabAllowed(ui.tab))ui.tab='pulpit';
   if(ui.tab==='pulpit'){
     if(pendingVotes().length)h+='<div class="alertbar" style="margin-top:12px"><span class="vwarn" style="color:inherit"><i>!</i>Czeka na Twój głos: '+pendingVotes().length+'</span><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>';
     h+=pulpitHtml();
@@ -1086,6 +1438,8 @@ function listHtml(){
     if(!db.resolutions.length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked()?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else if(!rs.length)h+=emptyBox('Brak uchwał w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked()?'':' albo dodaj nową uchwałę.'),locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else h+='<div class="list">'+rs.map(resCard).join('')+'</div>'+(selOn?'':'<p style="margin-top:16px"><button class="btn" data-act="dlall">Pobierz widoczne uchwały w jednym pliku Word</button></p>');
+  }else if(ui.tab==='kalendarz'){
+    h+=kalendarzHtml();
   }else if(ui.tab==='glosowanie'){
     h+=glosowanieHtml();
   }else if(ui.tab==='sprawozdania'){
@@ -1107,7 +1461,7 @@ function listHtml(){
     h+=head('Członkowie','Lista do obecności, podpisów i dostępów',isAdmin()?'<button class="btn primary" data-act="addmember">Dodaj osobę</button>':'');
     const ms=[...db.members].sort(byFunc);
     if(!ms.length)h+=emptyBox('Lista jest pusta',isAdmin()?'Dodaj członków rady, żeby zaznaczać obecność.':'Nikogo tu jeszcze nie dodano.','');
-    else if(isAdmin())h+='<div class="card">'+ms.map(memberRowAdmin).join('')+'</div><p class="hint">Osoby z funkcją Przewodniczącej/Przewodniczącego i Zastępcy mają zawsze dostęp do edycji dokumentów. PIN pozwala danej osobie się zalogować (głosowanie, notatki, a po zaznaczeniu „dostęp do edycji” – także dokumenty). Przycisk „Ustaw jako administratora” przekazuje Twoje uprawnienia administratora tej osobie.</p>';
+    else if(isAdmin())h+='<div class="card">'+ms.map(memberRowAdmin).join('')+'</div><p class="hint">Osoby z funkcją Przewodniczącej/Przewodniczącego i Zastępcy mają zawsze dostęp do edycji dokumentów. Adres e-mail pozwala danej osobie się zalogować (przy pierwszym wejściu zakłada konto tym adresem) (głosowanie, notatki, a po zaznaczeniu „dostęp do edycji” – także dokumenty). Przycisk „Ustaw jako administratora” przekazuje Twoje uprawnienia administratora tej osobie.</p>';
     else h+='<div class="card">'+ms.map(memberRowReadOnly).join('')+'</div>';
   }else{h+= isAdmin()?settingsHtml():emptyBox('Ustawienia','Dostępne tylko dla administratora.','');}
   return h+'</main>';
@@ -1116,7 +1470,7 @@ function memberRowAdmin(m){
   const r='data-root="member:'+m.id+'"',admin=db.settings.adminId===m.id,chair=isChairRole(m);
   return '<div class="member" '+r+'>'+
    '<div class="g3">'+inp(m,'Imię i nazwisko','name')+sel(m,'Funkcja','func',FUNCS.map(f=>[f,f]),true)+sel(m,'Zwrot','g',[['f','Pani'],['m','Pan']])+'</div>'+
-   '<div class="g2">'+inp(m,'Klasa (jeśli dotyczy)','cls',{ph:'np. 4b'})+inp(m,'Indywidualny PIN','pin',{ph:'np. 1234'})+'</div>'+
+   '<div class="g2">'+inp(m,'Klasa (jeśli dotyczy)','cls',{ph:'np. 4b'})+inp(m,'E-mail do logowania','email',{type:'email',ph:'np. jan.kowalski@gmail.com'})+'</div>'+
    '<div class="g2" style="align-items:center">'+
     (chair?'<span class="hint" style="margin:0">Dostęp do edycji: zawsze (funkcja Przewodniczącego/Zastępcy)</span>':chk(m,'Dostęp do edycji dokumentów','canEdit',true))+
     '<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">'+(admin?'<span class="vstat ok">Administrator</span>':'<button class="btn small" data-act="setadmin" data-id="'+m.id+'">Ustaw jako administratora</button>')+'</div></div>'+
@@ -1163,9 +1517,13 @@ function settingsHtml(){
     inp(s,'Liczba uprawnionych do głosowania w Prezydium','presidium',{type:'number',num:true,min:0})+
     chk(s,'Pokaż herb szkoły w nagłówku','logo',true)+
     '<p class="hint" style="margin:4px 0 0">Rok szkolny (wrzesień–czerwiec), w którym pracujesz, przełączysz strzałkami u góry Pulpitu i zakładek Zebrania, Uchwały i Sprawozdania – obecnie <b>'+esc(syLabel(viewYear))+'</b>.</p></div>';
+  const mc=(s.mail=s.mail||{});
+  h+='<div class="card" '+r+'><h3>Powiadomienia e-mail</h3><p class="hint">Po rozpoczęciu głosowania uprawnione osoby dostaną maila z linkiem do aplikacji. Dane wpiszesz z konta EmailJS.</p>'+
+    inp(s,'Service ID','mail.service',{ph:'np. service_ab12cd3'})+inp(s,'Template ID','mail.template',{ph:'np. template_x9y8z7'})+inp(s,'Public Key','mail.key',{ph:'np. AbCdEf123456'})+
+    '<div class="moreacts"><button class="btn" data-act="mailtest">Wyślij test na mój e-mail</button></div>'+(mailCfg()?'<p class="hint" style="margin:8px 0 0">✓ Powiadomienia włączone.</p>':'')+'</div>';
   h+='<div class="card"><h3>Administrator</h3><p class="hint">Obecny administrator: <b>'+esc(adminName())+'</b>. Administrator może zmieniać skład Prezydium, dostęp do edycji dokumentów poszczególnych osób i przekazywać uprawnienia administratora dalej – zrobisz to w zakładce Członkowie.</p></div>';
-  h+='<div class="card"><h3>Kopia zapasowa</h3><p class="hint">Dane są zapisane w tej przeglądarce, na tym urządzeniu. Raz na jakiś czas pobierz kopię – możesz ją wczytać na innym telefonie lub komputerze.</p><div class="moreacts"><button class="btn primary" data-act="backup">Pobierz kopię (plik)</button><button class="btn" data-act="importpick">Wczytaj kopię z pliku</button></div>';
-  if(ui.pendingImport){const p=ui.pendingImport;h+='<p class="hint" style="margin-top:14px">W pliku: zebrań '+p.meetings.length+', uchwał '+p.resolutions.length+', sprawozdań '+p.reports.length+', osób '+p.members.length+'. Wczytanie zastąpi dane w tej przeglądarce.</p><div class="moreacts"><button class="btn warn" data-act="importok">Wczytaj i zastąp</button><button class="btn" data-act="importcancel">Anuluj</button></div>';}
+  h+='<div class="card"><h3>Kopia zapasowa</h3><p class="hint">Dane są zapisane w bazie online i wszyscy widzą te same dokumenty. Raz na jakiś czas pobierz kopię na komputer – na wszelki wypadek.</p><div class="moreacts"><button class="btn primary" data-act="backup">Pobierz kopię (plik)</button><button class="btn" data-act="importpick">Wczytaj kopię z pliku</button></div>';
+  if(ui.pendingImport){const p=ui.pendingImport;h+='<p class="hint" style="margin-top:14px">W pliku: zebrań '+p.meetings.length+', uchwał '+p.resolutions.length+', sprawozdań '+p.reports.length+', osób '+p.members.length+'. Wczytanie zastąpi wszystkie obecne dane w aplikacji.</p><div class="moreacts"><button class="btn warn" data-act="importok">Wczytaj i zastąp</button><button class="btn" data-act="importcancel">Anuluj</button></div>';}
   h+='</div></div>';
   return h;
 }
@@ -1184,14 +1542,14 @@ function pollCard(r){
     h+='<div class="moreacts">'+(poll.open?'<button class="btn" data-act="pollclose">Zakończ głosowanie</button>':'<button class="btn primary" data-act="pollopen">Rozpocznij głosowanie online</button>')+
       (t.total&&st==='wniosek'?'<button class="btn primary" data-act="pollapply">Zatwierdź wynik i utwórz uchwałę</button>':'')+'</div>';
   }
-  if(!poll.open&&!t.total){h+='<p class="hint">Głosowanie online jest nieaktywne. '+(ui.readOnly||locked()?'':'Możesz je rozpocząć powyżej, a Prezydium zagłosuje w tej aplikacji – każda osoba zaloguje się swoim indywidualnym PIN-em. Dopiero po zakończeniu głosowania i zatwierdzeniu wyniku powstanie uchwała z numerem – jeśli wynik będzie negatywny, uchwała nie zostanie utworzona.')+'</p></div>';return h;}
+  if(!poll.open&&!t.total){h+='<p class="hint">Głosowanie online jest nieaktywne. '+(ui.readOnly||locked()?'':'Możesz je rozpocząć powyżej, a Prezydium zagłosuje w tej aplikacji – każda osoba zaloguje się swoim e-mailem i hasłem. Dopiero po zakończeniu głosowania i zatwierdzeniu wyniku powstanie uchwała z numerem – jeśli wynik będzie negatywny, uchwała nie zostanie utworzona.')+'</p></div>';return h;}
   h+='<p class="hint">Oddanych głosów: '+t.total+' – za '+t.za+', przeciw '+t.przeciw+', wstrzymało się '+t.wstrz+'.</p>';
   if((isAdmin()||curMember())&&t.total){
     h+='<div class="list" style="margin-bottom:10px">'+Object.keys(poll.votes).map(id=>{const m=db.members.find(x=>x.id===id);const v=poll.votes[id];const lbl=v==='za'?'za':v==='przeciw'?'przeciw':'wstrzymał(a) się';return '<div class="rlink"><span><b>'+esc(m?m.name:'(nieznana osoba)')+'</b> – '+lbl+'</span></div>';}).join('')+'</div><p class="hint" style="margin-top:-4px;margin-bottom:10px">To, kto jak zagłosował, widzą członkowie Prezydium – w samej uchwale pozostaną wyłącznie liczby.</p>';
   }
   if(poll.open&&!ui.readOnly){
     const me=curMember();
-    if(!me)h+='<p class="hint">Zaloguj się swoim PIN-em u góry strony, aby zagłosować.</p>';
+    if(!me)h+='<p class="hint">Twój adres e-mail nie jest przypisany do członka Rady – nie możesz głosować.</p>';
     else{
       const my=poll.votes[me.id];
       h+='<p class="hint">Głosujesz jako: <b>'+esc(me.name)+'</b></p><div class="moreacts">'+[['za','Za'],['przeciw','Przeciw'],['wstrz','Wstrzymuję się']].map(o=>'<button class="btn'+(my===o[0]?' primary':'')+'" data-act="votecast" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
@@ -1321,6 +1679,7 @@ function repForm(r){
 /* --- render --- */
 function render(keepScroll){
   if(ui.editing&&!identified())ui.editing=null;
+  if(ui.editing&&isRep(curMember())&&ui.editing.kind!=='doc')ui.editing=null;
   const y=window.scrollY;
   $app.innerHTML=topHtml()+(ui.editing?editHtml():listHtml())+(ui.editing?abarHtml():navHtml());
   if(keepScroll!==false)window.scrollTo(0,y);
@@ -1350,7 +1709,8 @@ function onBind(t){
   const rk=rootEl.dataset.root;
   if(rk!=='pin'){
     if(ui.readOnly)return;
-    if(rk!=='notedraft'){
+    if(rk==='evdraft'||rk==='anndraft'){if(!canPlan())return;}
+    else if(rk!=='notedraft'){
       if(rk.indexOf('member:')===0||rk==='settings'){if(!isAdmin())return;}
       else if(locked())return;
     }
@@ -1360,7 +1720,7 @@ function onBind(t){
   let v=t.type==='checkbox'?t.checked:(t.dataset.type==='num'?(t.value===''?'':Number(t.value)):t.value);
   setP(root,p,v);
   if(rk==='bulk'){const pv=document.getElementById('bulkprev');if(pv)pv.innerHTML=bulkPrev();return;}
-  if(rk==='notedraft'||rk==='pin')return;
+  if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft')return;
   const e=ui.editing;
   if(e&&e.kind==='resolution'&&root===getRec()){
     const r=root;
@@ -1441,7 +1801,7 @@ function readImport(inp){
 }
 const ACTIONS={
   tab(el){ui.tab=el.dataset.v;ui.editing=null;ui.confirm=null;ui.sel=null;render(false);window.scrollTo(0,0);},
-  open(el){ui.editing={kind:el.dataset.kind,id:el.dataset.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
+  open(el){if(isRep(curMember())&&el.dataset.kind!=='doc'){toast('Ten dokument jest dostępny tylko dla Prezydium.');return;}ui.editing={kind:el.dataset.kind,id:el.dataset.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   back(){ui.editing=null;ui.confirm=null;render(false);window.scrollTo(0,0);},
   new(el){const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   seg(el){ui.editTab=el.dataset.v;render(false);window.scrollTo(0,0);},
@@ -1477,7 +1837,9 @@ const ACTIONS={
     const r=getRec();if(!r)return;const c=JSON.parse(JSON.stringify(r));c.id=uid();c.date=todayISO();c.year=syStart(c.date);c.status='wniosek';c.num='';c.yearT=false;c.numT=false;c.poll=null;c.za='';c.przeciw='';c.wstrz='';
     db.resolutions.push(c);save();ui.editing={kind:'resolution',id:c.id};ui.confirm=null;render(false);window.scrollTo(0,0);toast('Utworzono kopię jako nowy wniosek – przeprowadź nad nim głosowanie.');
   },
-  pollopen(){const r=getRec();if(!r)return;r.poll={open:true,votes:(r.poll&&r.poll.votes)||{}};save();render();},
+  pollopen(){const r=getRec();if(!r)return;const was=r.poll&&r.poll.open;r.poll={open:true,votes:(r.poll&&r.poll.votes)||{}};save();render();if(!was)notifyVote(r,false);},
+  pollremind(el){const r=db.resolutions.find(x=>x.id===el.dataset.id);if(r&&r.poll&&r.poll.open)notifyVote(r,true);},
+  mailtest(){const me=curMember();if(!me||!me.email){toast('Wpisz najpierw swój e-mail w zakładce Członkowie.');return;}sendMail([me.email],'Test powiadomień – Rada Rodziców','To jest wiadomość testowa. Jeśli ją widzisz, powiadomienia działają.').then(r=>toast(r.ok?'Wysłano test na '+me.email:r.why==='nocfg'?'Uzupełnij wszystkie trzy pola.':'Błąd: '+r.why));},
   pollclose(){const r=getRec();if(!r||!r.poll)return;r.poll.open=false;save();render();},
   pollapply(){
     const r=getRec();if(!r)return;const t=pollTally(r);
@@ -1501,7 +1863,7 @@ const ACTIONS={
     const r=el.dataset.id?db.resolutions.find(x=>x.id===el.dataset.id):getRec();if(!r){toast('Otwórz uchwałę, żeby zagłosować.');return;}
     if(curMember()&&!canVote(curMember(),r)){toast('Nie bierzesz udziału w tym głosowaniu.');return;}
     if(!r.poll||!r.poll.open){toast('Głosowanie nie jest aktywne.');return;}
-    const me=curMember();if(!me){toast('Najpierw zaloguj się swoim PIN-em.');return;}
+    const me=curMember();if(!me){toast('Twoje konto nie jest przypisane do członka Rady.');return;}
     r.poll.votes=r.poll.votes||{};r.poll.votes[me.id]=el.dataset.v;
     save();render();toast('Głos zapisany.');
   },
@@ -1512,7 +1874,7 @@ const ACTIONS={
     if(!m){toast('Nieprawidłowy PIN.');return;}
     ui.voterId=m.id;saveVoterId(m.id);ui.voterPinInput='';render();toast('Zalogowano jako '+m.name+'.');
   },
-  logout(){ui.voterId='';saveVoterId('');ui.voterPinInput='';render();},
+  logout(){if(window.__fbSignOut)window.__fbSignOut();},
   claimadmin(){
     const m=db.members.find(x=>x.id===db.settings.adminId);
     if(!m||m.pin){toast('To już nie jest możliwe.');return;}
@@ -1543,6 +1905,30 @@ const ACTIONS={
     save();ui.confirm=null;render();
   },
   delmembercancel(){ui.confirm=null;render();},
+  calprev(){const y=+ui.calM.slice(0,4),m=+ui.calM.slice(5,7)-2;const d=new Date(y,m,1);ui.calM=d.getFullYear()+'-'+pad(d.getMonth()+1);render();},
+  calnext(){const y=+ui.calM.slice(0,4),m=+ui.calM.slice(5,7);const d=new Date(y,m,1);ui.calM=d.getFullYear()+'-'+pad(d.getMonth()+1);render();},
+  calday(el){ui.calDay=ui.calDay===el.dataset.v?null:el.dataset.v;render();},
+  evnew(el){if(!canPlan())return;ui.evDraft={id:'',title:'',type:'impreza',date:(el&&el.dataset.v)||ui.calDay||todayISO(),dateEnd:'',time:'',place:'',desc:''};ui.focusBind='title';render();window.scrollTo(0,0);},
+  evedit(el){if(!canPlan())return;const e=(db.events||[]).find(x=>x.id===el.dataset.id);if(!e)return;ui.evDraft=Object.assign({},e);render();window.scrollTo(0,0);},
+  evcancel(){ui.evDraft=null;render();},
+  evsave(){
+    if(!canPlan())return;const d=ui.evDraft;if(!d)return;
+    if(!String(d.title||'').trim()){toast('Wpisz nazwę wydarzenia.');return;}
+    if(!d.date){toast('Wybierz datę.');return;}
+    const rec={id:d.id||uid(),title:String(d.title).trim(),type:d.type||'impreza',date:d.date,dateEnd:d.dateEnd&&d.dateEnd>d.date?d.dateEnd:'',time:d.time||'',place:String(d.place||'').trim(),desc:String(d.desc||'').trim(),author:(curMember()||{}).name||''};
+    db.events=db.events||[];const i=db.events.findIndex(x=>x.id===rec.id);
+    if(i>=0)db.events[i]=rec;else db.events.push(rec);
+    ui.evDraft=null;ui.calM=rec.date.slice(0,7);ui.calDay=rec.date;save();render();toast(i>=0?'Zapisano zmiany.':'Dodano do kalendarza.');
+  },
+  evdel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='e'+id){ui.confirm='e'+id;render();return;}db.events=(db.events||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto wydarzenie.');},
+  annnew(){if(!canPlan())return;ui.annDraft={text:'',until:''};ui.focusBind='text';render();},
+  anncancel(){ui.annDraft=null;render();},
+  annsave(){
+    if(!canPlan())return;const d=ui.annDraft;if(!d||!String(d.text||'').trim()){toast('Wpisz treść ogłoszenia.');return;}
+    db.ann=db.ann||[];db.ann.push({id:uid(),text:String(d.text).trim(),until:d.until||'',author:(curMember()||{}).name||'',created:new Date().toISOString()});
+    ui.annDraft=null;save();render();toast('Ogłoszenie opublikowane.');
+  },
+  anndel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='a'+id){ui.confirm='a'+id;render();return;}db.ann=(db.ann||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto ogłoszenie.');},
   addnote(){
     const d=ui.noteDraft||{};
     if(!String(d.text||'').trim()){toast('Napisz treść notatki.');return;}
@@ -1572,7 +1958,7 @@ const ACTIONS={
   },
   importok(){
     const d=ui.pendingImport;if(!d)return;const b=defaults();
-    db={v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:d.members,meetings:d.meetings,resolutions:fixResYears(d.resolutions),reports:d.reports,notes:d.notes||[],docs:d.docs||[]};
+    db={v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:d.members,meetings:d.meetings,resolutions:fixResYears(d.resolutions),reports:d.reports,notes:d.notes||[],docs:d.docs||[],events:d.events||[],ann:d.ann||[]};
     ui.pendingImport=null;save();render();toast('Kopia wczytana.');
   },
   importcancel(){ui.pendingImport=null;render();},
@@ -1613,8 +1999,8 @@ const ACTIONS={
     save();ui.bulk=null;render();toast('Dodano uchwał: '+it.length+'. Sprawdź daty i nazwy.');
   }
 };
-const VIEW_SAFE=new Set(['tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
-const LOCKED_SAFE=new Set(['addnote','notedone','delnote','delnotecancel','votecast']);
+const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
+const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
   const act=el.dataset.act;
