@@ -68,6 +68,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 .nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .voteic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--kd)}
 .nav button.on{color:var(--ink)}
+.nav .ic{position:relative}
+.nbadge{position:absolute;top:-4px;right:2px;min-width:18px;height:18px;border-radius:999px;background:#D93A3A;color:#fff;font:800 12px/18px Nunito,sans-serif;text-align:center;padding:0 4px;box-shadow:0 0 0 2px var(--surface)}
+.vwarn{display:inline-flex;align-items:center;gap:6px;color:#C62F2F;font-weight:800}
+.vwarn i{font-style:normal;width:22px;height:22px;border-radius:999px;background:#D93A3A;color:#fff;display:inline-grid;place-items:center;font-size:14px;flex:none}
+.vdone{color:var(--mint-d);font-weight:800}
+.alertbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#FDE2E2;color:#9E2424;border-radius:16px;padding:12px 14px;margin:0 0 14px;font-weight:700}
 .nav button.on .ic{background:var(--kc);color:var(--kd)}
 
 .pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:14px 0 14px;flex-wrap:wrap}
@@ -208,6 +214,7 @@ input:disabled{opacity:.55}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:14px;font-weight:700;font-size:14.5px;max-width:min(92vw,420px);text-align:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 
+@media (max-width:899px){.nav .ic{width:34px}.nav button{font-size:9px}}
 @media (min-width:900px){
   .top{order:-2}
   .nav{position:static;order:-1;width:100%;max-width:1180px;margin:0 auto;background:transparent;border:0;padding:4px 16px 0;gap:6px}
@@ -811,9 +818,10 @@ const ICONS={
   notatnik:'<path d="M4 3h13l3 3v15H4z"/><path d="M17 3v4h4M8 11h8M8 15h8M8 7h4"/>',
   czlonkowie:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.6 3.3-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.5c2.6 0 4.5 1.5 5 4.5"/>',
   dokumenty:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  glosowanie:'<path d="M4 12h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M8 12V4h8v8"/><path d="m10 8 1.5 1.5L14 7"/>',
   ustawienia:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
 };
-const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['sprawozdania','Sprawozdania','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
+const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['glosowanie','Głosowanie','k-resolution'],['sprawozdania','Sprawozdania','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
 const KIND_CLASS={meeting:'k-meeting',resolution:'k-resolution',report:'k-report',doc:'k-doc'};
 const REPORT_NAMES={dzialalnosc:'Sprawozdanie z działalności',finansowe:'Sprawozdanie finansowe',zebranie:'Sprawozdanie z zebrania'};
 
@@ -927,9 +935,38 @@ function idBar(){
   h+='</div>';
   return h;
 }
+function canVote(m,r){if(!m)return false;return r.body==='rada'?true:PRES.indexOf(m.func)>=0;}
+function openPolls(){return db.resolutions.filter(r=>r.poll&&r.poll.open);}
+function pendingVotes(){const me=curMember();if(!me)return [];return openPolls().filter(r=>canVote(me,r)&&!(r.poll.votes||{})[me.id]);}
+function voteTitle(r){return (r.mode==='wydatek'&&!blank(r.cel)?cap(r.cel.trim()):cap((r.subject||'').replace(/^w sprawie\s*/i,''))||'Wniosek bez tytułu')+(r.mode==='wydatek'&&!blank(r.kwota)?' – '+money(num(r.kwota))+' zł':'');}
+function voteItem(r){
+  const me=curMember(),t=pollTally(r),my=me?(r.poll.votes||{})[me.id]:null,eligible=canVote(me,r);
+  const voters=db.members.filter(m=>canVote(m,r)),missing=voters.filter(m=>!(r.poll.votes||{})[m.id]);
+  let h='<div class="card"><div class="nhead"><b class="nauthor">'+esc(voteTitle(r))+'</b><span class="nwhen">'+fmtDate(r.date)+'</span></div>';
+  h+='<span class="nref">'+(r.body==='rada'?'Głosuje Rada Rodziców':'Głosuje Prezydium')+'</span>';
+  if(!blank(r.subject)&&r.mode==='wydatek')h+='<p class="hint" style="margin:0 0 8px">'+esc(subjectOf(r))+'</p>';
+  if(eligible){
+    h+=my?'<p class="vdone" style="margin:0 0 8px">✓ Twój głos: '+(my==='za'?'za':my==='przeciw'?'przeciw':'wstrzymuję się')+' (możesz go zmienić do końca głosowania)</p>':'<p class="vwarn" style="margin:0 0 8px"><i>!</i>Nie oddano jeszcze Twojego głosu</p>';
+    h+='<div class="moreacts">'+[['za','Za'],['przeciw','Przeciw'],['wstrz','Wstrzymuję się']].map(o=>'<button class="btn'+(my===o[0]?' primary':'')+'" data-act="votecast" data-id="'+r.id+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
+  }else h+='<p class="hint">Nie bierzesz udziału w tym głosowaniu.</p>';
+  h+='<p class="hint" style="margin:10px 0 0">Oddane głosy: '+t.total+(r.body!=='rada'&&voters.length?' z '+voters.length:'')+' – za '+t.za+', przeciw '+t.przeciw+', wstrzymało się '+t.wstrz+'.'+(missing.length&&r.body!=='rada'?' Brakuje głosu: '+missing.map(m=>esc(m.name)).join(', ')+'.':'')+'</p>';
+  h+='<p style="margin:10px 0 0"><button class="btn small" data-act="open" data-kind="resolution" data-id="'+r.id+'">Szczegóły wniosku'+(locked()?'':' i zakończenie głosowania')+'</button></p>';
+  return h+'</div>';
+}
+function glosowanieHtml(){
+  const op=openPolls().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let h=head('Głosowanie','Wnioski, nad którymi trwa teraz głosowanie online','');
+  const pend=pendingVotes();
+  if(pend.length)h+='<div class="alertbar"><span class="vwarn" style="color:inherit"><i>!</i>Czeka na Twój głos: '+pend.length+'</span></div>';
+  if(!op.length)h+=emptyBox('Brak trwających głosowań',locked()?'Gdy pojawi się wniosek do głosowania, zobaczysz go tutaj.':'Otwórz wniosek w zakładce Uchwały i kliknij „Rozpocznij głosowanie online”.','');
+  else h+='<div class="list">'+op.map(voteItem).join('')+'</div>';
+  const done=db.resolutions.filter(r=>r.poll&&!r.poll.open&&pollTally(r).total).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  if(done.length)h+='<h3 class="h3">Ostatnio zakończone</h3><div class="list">'+done.map(r=>{const t=pollTally(r),st=r.status||'przyjeta';return '<div class="card"><b>'+esc(voteTitle(r))+'</b><p class="hint" style="margin:4px 0 0">'+fmtDate(r.date)+' · za '+t.za+', przeciw '+t.przeciw+', wstrz. '+t.wstrz+' · '+(st==='przyjeta'?'przyjęta (uchwała nr '+esc(rno(r))+')':st==='odrzucona'?'odrzucona':'czeka na zatwierdzenie wyniku')+'</p></div>';}).join('')+'</div>';
+  return h;
+}
 function navHtml(){
   const tabs=TABS.filter(t=>isAdmin()||t[0]!=='ustawienia');
-  return '<nav class="nav" aria-label="Sekcje">'+tabs.map(t=>'<button class="'+t[2]+(ui.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(ui.tab===t[0]?' aria-current="page"':'')+'><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[t[0]]+'</svg></span><span class="lbl">'+t[1]+'</span></button>').join('')+'</nav>';
+  return '<nav class="nav" aria-label="Sekcje">'+tabs.map(t=>'<button class="'+t[2]+(ui.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(ui.tab===t[0]?' aria-current="page"':'')+'><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[t[0]]+'</svg>'+(t[0]==='glosowanie'&&pendingVotes().length?'<span class="nbadge" aria-label="Czeka na Twój głos">!</span>':'')+'</span><span class="lbl">'+t[1]+'</span></button>').join('')+'</nav>';
 }
 const head=(h,sub,btn)=>'<div class="pagehead"><div><h2>'+h+'</h2><p>'+sub+'</p></div>'+(btn||'')+'</div>';
 const emptyBox=(t,s,btn)=>'<div class="empty"><b>'+t+'</b>'+s+(btn||'')+'</div>';
@@ -1027,6 +1064,7 @@ function listHtml(){
     return h+'<p class="hint" style="text-align:center;margin-top:4px">Zaloguj się powyżej, aby zobaczyć zawartość.</p></main>';
   }
   if(ui.tab==='pulpit'){
+    if(pendingVotes().length)h+='<div class="alertbar" style="margin-top:12px"><span class="vwarn" style="color:inherit"><i>!</i>Czeka na Twój głos: '+pendingVotes().length+'</span><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>';
     h+=pulpitHtml();
   }else if(ui.tab==='zebrania'){
     const ms=[...db.meetings].filter(m=>ui.allYears||inSY(m.date,viewYear)).sort((a,b)=>b.date.localeCompare(a.date));
@@ -1048,6 +1086,8 @@ function listHtml(){
     if(!db.resolutions.length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked()?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else if(!rs.length)h+=emptyBox('Brak uchwał w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked()?'':' albo dodaj nową uchwałę.'),locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else h+='<div class="list">'+rs.map(resCard).join('')+'</div>'+(selOn?'':'<p style="margin-top:16px"><button class="btn" data-act="dlall">Pobierz widoczne uchwały w jednym pliku Word</button></p>');
+  }else if(ui.tab==='glosowanie'){
+    h+=glosowanieHtml();
   }else if(ui.tab==='sprawozdania'){
     const rp=[...db.reports].filter(r=>ui.allYears||!r.sy||syFromLabel(r.sy)===viewYear).sort((a,b)=>b.date.localeCompare(a.date));
     h+=yearBar();
@@ -1458,11 +1498,12 @@ const ACTIONS={
     save();render();refreshPreview();updateLive();toast('Wniosek otwarty ponownie do głosowania.');
   },
   votecast(el){
-    const r=getRec();if(!r){toast('Otwórz uchwałę, żeby zagłosować.');return;}
+    const r=el.dataset.id?db.resolutions.find(x=>x.id===el.dataset.id):getRec();if(!r){toast('Otwórz uchwałę, żeby zagłosować.');return;}
+    if(curMember()&&!canVote(curMember(),r)){toast('Nie bierzesz udziału w tym głosowaniu.');return;}
     if(!r.poll||!r.poll.open){toast('Głosowanie nie jest aktywne.');return;}
     const me=curMember();if(!me){toast('Najpierw zaloguj się swoim PIN-em.');return;}
     r.poll.votes=r.poll.votes||{};r.poll.votes[me.id]=el.dataset.v;
-    save();render();
+    save();render();toast('Głos zapisany.');
   },
   login(){
     const pin=String(ui.voterPinInput||'').trim();
