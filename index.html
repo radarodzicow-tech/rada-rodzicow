@@ -251,7 +251,7 @@ input:disabled{opacity:.55}
     messagingSenderId:"10353536380",
     appId:"1:10353536380:web:479d2471ed5eb42dd4c8f9"
   };
-  var fs=null,ready;
+  var fs=null,ready,written=[],inflight=0,held=null;
   try{
     firebase.initializeApp(cfg);
     fs=firebase.firestore();
@@ -279,8 +279,8 @@ input:disabled{opacity:.55}
       var ref=fs.doc(path);
       return {
         get:function(){return ref.get().then(wrapSnap).catch(function(e){warn(e);throw e;});},
-        set:function(obj){return ref.set({json:JSON.stringify(obj),updated:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){var b=document.getElementById('fbwarn');if(b)b.remove();}).catch(function(e){warn(e);throw e;});},
-        onSnapshot:function(cb,err){return ref.onSnapshot(function(s){if(s.metadata&&s.metadata.hasPendingWrites)return;cb(wrapSnap(s));},function(e){warn(e);if(err)err(e);});}
+        set:function(obj){var js=JSON.stringify(obj);written.push(js);if(written.length>40)written.shift();inflight++;return ref.set({json:js,updated:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){var b=document.getElementById('fbwarn');if(b)b.remove();}).catch(function(e){warn(e);throw e;}).finally(function(){inflight--;if(!inflight&&held){var h=held;held=null;h();}});},
+        onSnapshot:function(cb,err){return ref.onSnapshot(function(s){if(s.metadata&&s.metadata.hasPendingWrites)return;var raw=s.exists?(s.data()||{}).json:null;if(raw&&written.indexOf(raw)>=0)return;var go=function(){cb(wrapSnap(s));};if(inflight){held=go;return;}go();},function(e){warn(e);if(err)err(e);});}
       };
     }
   };
