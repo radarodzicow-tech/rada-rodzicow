@@ -1185,12 +1185,22 @@ function calItems(){
 }
 function isoOf(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
 function itemsOn(iso,items){return items.filter(i=>i.date<=iso&&i.end>=iso);}
+function evHelpBlock(e){
+  const help=e.help||{},ids=Object.keys(help).filter(id=>help[id]);
+  const me=curMember(),meHelping=!!(me&&help[me.id]);
+  const names=ids.map(id=>{const m=db.members.find(x=>x.id===id);return m?m.name:null;}).filter(Boolean);
+  return '<div class="moreacts" style="margin-top:8px">'+
+    (me&&!ui.readOnly?'<button class="btn small'+(meHelping?' primary':'')+'" data-act="evhelp" data-id="'+e.id+'" aria-pressed="'+meHelping+'">'+(meHelping?'Pomagam ✓':'Zgłoś się do pomocy')+'</button>':'')+
+    '</div>'+
+    '<p class="hint" style="margin:6px 0 0">'+(names.length?'Pomoc zgłosili: '+names.map(x=>esc(x)).join(', ')+'.':(me?'Nikt jeszcze się nie zgłosił – bądź pierwszy/a.':'Nikt jeszcze się nie zgłosił.'))+'</p>';
+}
 function evRow(i,withActs){
   const p=i.date.split('-'),cls=i.kind==='mt'?' mt':i.kind==='fr'?' fr':'';
   const meta=[i.end!==i.date?'do '+fmtDate(i.end):'',i.time,i.place].filter(Boolean).join(' · ');
   let h='<div class="evrow"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+'</div>'+
     '<div class="m">'+(i.kind==='mt'?'Zebranie':i.kind==='fr'?'Dzień wolny od zajęć':'Wydarzenie')+(meta?' · '+esc(meta):'')+'</div>'+(i.desc?'<div class="d">'+esc(i.desc)+'</div>':'');
   if(withActs&&i.meeting&&!isRep(curMember()))h+='<p style="margin:6px 0 0"><button class="btn small" data-act="open" data-kind="meeting" data-id="'+i.id+'">Otwórz zebranie</button></p>';
+  if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza')h+=evHelpBlock(i.src);
   if(withActs&&!i.meeting&&canPlan()){
     h+='<div class="moreacts" style="margin-top:6px"><button class="btn small" data-act="evedit" data-id="'+i.id+'">Zmień</button>'+
       (ui.confirm==='e'+i.id?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn small warn" data-act="evdel" data-id="'+i.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':'<button class="btn small ghost" data-act="evdel" data-id="'+i.id+'">Usuń</button>')+'</div>';
@@ -1921,6 +1931,13 @@ const ACTIONS={
     ui.evDraft=null;ui.calM=rec.date.slice(0,7);ui.calDay=rec.date;save();render();toast(i>=0?'Zapisano zmiany.':'Dodano do kalendarza.');
   },
   evdel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='e'+id){ui.confirm='e'+id;render();return;}db.events=(db.events||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto wydarzenie.');},
+  evhelp(el){
+    const me=curMember();if(!me){toast('Zaloguj się swoim PIN-em, aby zgłosić pomoc.');return;}
+    const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
+    e.help=e.help||{};
+    if(e.help[me.id])delete e.help[me.id];else e.help[me.id]=true;
+    save();render();
+  },
   annnew(){if(!canPlan())return;ui.annDraft={text:'',until:''};ui.focusBind='text';render();},
   anncancel(){ui.annDraft=null;render();},
   annsave(){
@@ -2000,7 +2017,7 @@ const ACTIONS={
   }
 };
 const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
-const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
+const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
   const act=el.dataset.act;
