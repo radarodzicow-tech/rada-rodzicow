@@ -1295,7 +1295,7 @@ function voteMailText(r,reminder){
 async function notifyVote(r,reminder){
   const me=curMember();
   const list=db.members.filter(m=>canVote(m,r)&&m.email&&(!me||m.id!==me.id)&&(!reminder||!(r.poll&&r.poll.votes||{})[m.id])).map(m=>String(m.email).trim());
-  if(!list.length){if(reminder)toast('Wszyscy uprawnieni już zagłosowali.');return;}
+  if(!list.length){toast(reminder?'Wszyscy uprawnieni już zagłosowali.':'Nie wysłano maili: brak uprawnionych z adresem e-mail (sprawdź pole „Głosuje” w uchwale i e-maile w zakładce Członkowie).');return;}
   const tx=voteMailText(r,reminder);
   const res=await sendMail(list,tx.subject,tx.message);
   if(res.ok)toast((reminder?'Wysłano przypomnienie':'Wysłano powiadomienie')+' do '+res.sent+' os.'+(res.partial?' (część adresów się nie powiodła)':''));
@@ -1312,7 +1312,7 @@ function eventMailText(e){
 async function notifyEvent(e){
   const me=curMember();
   const list=db.members.filter(m=>m.email&&(!me||m.id!==me.id)).map(m=>String(m.email).trim());
-  if(!list.length)return;
+  if(!list.length){toast('Nie wysłano maili: nikt inny nie ma zapisanego e-maila (zakładka Członkowie).');return;}
   const tx=eventMailText(e);
   const res=await sendMail(list,tx.subject,tx.message);
   if(res.ok)toast('Wysłano powiadomienie o wydarzeniu do '+res.sent+' os.'+(res.partial?' (część adresów się nie powiodła)':''));
@@ -1556,7 +1556,7 @@ function settingsHtml(){
   const mc=(s.mail=s.mail||{});
   h+='<div class="card" '+r+'><h3>Powiadomienia e-mail</h3><p class="hint">Po rozpoczęciu głosowania uprawnione osoby dostaną maila z linkiem do aplikacji. Dane wpiszesz z konta EmailJS.</p>'+
     inp(s,'Service ID','mail.service',{ph:'np. service_ab12cd3'})+inp(s,'Template ID','mail.template',{ph:'np. template_x9y8z7'})+inp(s,'Public Key','mail.key',{ph:'np. AbCdEf123456'})+
-    '<div class="moreacts"><button class="btn" data-act="mailtest">Wyślij test na mój e-mail</button></div>'+(mailCfg()?'<p class="hint" style="margin:8px 0 0">✓ Powiadomienia włączone.</p>':'')+'</div>';
+    '<div class="moreacts"><button class="btn" data-act="mailtest">Wyślij test na mój e-mail</button></div>'+(mailCfg()?'<p class="hint" style="margin:8px 0 0">✓ Powiadomienia włączone. Osób z zapisanym e-mailem: '+db.members.filter(m=>m.email).length+' z '+db.members.length+'.</p>':'')+'</div>';
   h+='<div class="card"><h3>Administrator</h3><p class="hint">Obecny administrator: <b>'+esc(adminName())+'</b>. Administrator może zmieniać skład Prezydium, dostęp do edycji dokumentów poszczególnych osób i przekazywać uprawnienia administratora dalej – zrobisz to w zakładce Członkowie.</p></div>';
   h+='<div class="card"><h3>Kopia zapasowa</h3><p class="hint">Dane są zapisane w bazie online i wszyscy widzą te same dokumenty. Raz na jakiś czas pobierz kopię na komputer – na wszelki wypadek.</p><div class="moreacts"><button class="btn primary" data-act="backup">Pobierz kopię (plik)</button><button class="btn" data-act="importpick">Wczytaj kopię z pliku</button></div>';
   if(ui.pendingImport){const p=ui.pendingImport;h+='<p class="hint" style="margin-top:14px">W pliku: zebrań '+p.meetings.length+', uchwał '+p.resolutions.length+', sprawozdań '+p.reports.length+', osób '+p.members.length+'. Wczytanie zastąpi wszystkie obecne dane w aplikacji.</p><div class="moreacts"><button class="btn warn" data-act="importok">Wczytaj i zastąp</button><button class="btn" data-act="importcancel">Anuluj</button></div>';}
