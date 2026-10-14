@@ -738,6 +738,7 @@ function bundleBlocks(list){
 /* ---------- zebrania ---------- */
 function mtype(m){
   if(m.type==='prezydium')return {gen:'posiedzenia Prezydium Rady Rodziców',nom:'posiedzenie Prezydium Rady Rodziców',noun:'Posiedzenie'};
+  if(m.type==='dyrekcja')return {gen:'spotkania z Dyrekcją szkoły',nom:'spotkanie z Dyrekcją szkoły',noun:'Spotkanie'};
   if(m.type==='inne')return {gen:'spotkania',nom:'spotkanie',noun:'Spotkanie'};
   return {gen:'zebrania Rady Rodziców',nom:'zebranie Rady Rodziców',noun:'Zebranie'};
 }
@@ -1175,12 +1176,13 @@ function isRep(m){return !!m&&m.func==='Przedstawiciel klasy';}
 const REP_TABS=['pulpit','glosowanie','kalendarz','dokumenty','notatnik','czlonkowie'];
 function tabAllowed(t){return !isRep(curMember())||REP_TABS.indexOf(t)>=0;}
 function canPlan(){const m=curMember();if(ui.readOnly||!m)return false;return isAdmin()||isChairRole(m)||m.func==='Sekretarz';}
+function canSeeNotes(){const m=curMember();if(ui.readOnly||!m)return false;return isChairRole(m)||m.func==='Sekretarz';}
 const MONF=['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
 const EVTYPES=[['impreza','Impreza / wydarzenie'],['wolne','Dzień wolny od zajęć'],['termin','Termin / przypomnienie']];
 function calItems(){
   const out=[];
   (db.events||[]).forEach(e=>{if(!e.date)return;out.push({id:e.id,kind:e.type==='wolne'?'fr':'ev',date:e.date,end:e.dateEnd&&e.dateEnd>e.date?e.dateEnd:e.date,title:e.title||'Wydarzenie',time:e.time||'',place:e.place||'',desc:e.desc||'',src:e});});
-  db.meetings.forEach(m=>{if(!m.date)return;const t=m.type==='rada'?'Zebranie Rady Rodziców':m.type==='prezydium'?'Zebranie Prezydium':(m.customType||'Spotkanie');out.push({id:m.id,kind:'mt',date:m.date,end:m.date,title:t,time:m.time||'',place:m.place||'',desc:'',meeting:true});});
+  db.meetings.forEach(m=>{if(!m.date)return;const t=m.type==='rada'?'Zebranie Rady Rodziców':m.type==='prezydium'?'Zebranie Prezydium':m.type==='dyrekcja'?'Spotkanie z Dyrekcją':(m.customType||'Spotkanie');out.push({id:m.id,kind:'mt',date:m.date,end:m.date,title:t,time:m.time||'',place:m.place||'',desc:'',meeting:true});});
   return out.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
 }
 function isoOf(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
@@ -1324,7 +1326,7 @@ function glosowanieHtml(){
   return h;
 }
 function navHtml(){
-  const tabs=TABS.filter(t=>(isAdmin()||t[0]!=='ustawienia')&&tabAllowed(t[0]));
+  const tabs=TABS.filter(t=>(isAdmin()||t[0]!=='ustawienia')&&(canSeeNotes()||t[0]!=='notatnik')&&tabAllowed(t[0]));
   return '<nav class="nav" aria-label="Sekcje">'+tabs.map(t=>'<button class="'+t[2]+(ui.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'"'+(ui.tab===t[0]?' aria-current="page"':'')+'><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICONS[t[0]]+'</svg>'+(t[0]==='glosowanie'&&pendingVotes().length?'<span class="nbadge" aria-label="Czeka na Twój głos">!</span>':'')+'</span><span class="lbl">'+t[1]+'</span></button>').join('')+'</nav>';
 }
 const head=(h,sub,btn)=>'<div class="pagehead"><div><h2>'+h+'</h2><p>'+sub+'</p></div>'+(btn||'')+'</div>';
@@ -1406,7 +1408,7 @@ function pulpitHtml(){
     h+='<div class="card k-resolution"><h3 style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" class="voteic" aria-hidden="true"><path d="M4 9l8-5 8 5"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M9 9v3l3 2 3-2V9"/></svg>Czeka na głosowanie nad dofinansowaniem ('+pendingVotes.length+')</h3><div class="list">'+pendingVotes.slice(0,5).map(resCard).join('')+'</div>'+
       (pendingVotes.length>5?'<p class="hint" style="margin-top:8px">i '+(pendingVotes.length-5)+' więcej…</p>':'')+'</div>';
   }
-  const openNotes=db.notes.filter(n=>!n.done).sort((a,b)=>(b.created||'').localeCompare(a.created||''));
+  const openNotes=canSeeNotes()?db.notes.filter(n=>!n.done).sort((a,b)=>(b.created||'').localeCompare(a.created||'')):[];
   if(openNotes.length){
     h+='<div class="card k-note"><h3>Nowe notatki ('+openNotes.length+')</h3><div class="list">'+openNotes.slice(0,3).map(noteCard).join('')+'</div>'+
       (openNotes.length>3?'<p style="margin-top:10px">':'<p style="margin-top:4px">')+'<button class="btn small" data-act="tab" data-v="notatnik">Zobacz notatnik</button></p></div>';
@@ -1425,6 +1427,7 @@ function listHtml(){
     return h+'<p class="hint" style="text-align:center;margin-top:4px">Zaloguj się powyżej, aby zobaczyć zawartość.</p></main>';
   }
   if(!tabAllowed(ui.tab))ui.tab='pulpit';
+  if(ui.tab==='notatnik'&&!canSeeNotes())ui.tab='pulpit';
   if(ui.tab==='pulpit'){
     if(pendingVotes().length)h+='<div class="alertbar" style="margin-top:12px"><span class="vwarn" style="color:inherit"><i>!</i>Czeka na Twój głos: '+pendingVotes().length+'</span><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>';
     h+=pulpitHtml();
@@ -1605,7 +1608,7 @@ function docForm(d){
 function meetingForm(m){
   const S=attStats(m);
   let h='<div class="card"><h3>Kiedy i gdzie</h3>'+
-    sel(m,'Rodzaj spotkania','type',[['rada','Zebranie Rady Rodziców'],['prezydium','Posiedzenie Prezydium'],['inne','Inne spotkanie']],true)+
+    sel(m,'Rodzaj spotkania','type',[['rada','Zebranie Rady Rodziców'],['prezydium','Posiedzenie Prezydium'],['dyrekcja','Spotkanie z Dyrekcją'],['inne','Inne spotkanie']],true)+
     (m.type==='inne'?inp(m,'Temat lub nazwa (opcjonalnie)','customType',{ph:'np. spotkanie z dyrekcją'}):'')+
     '<div class="g3">'+inp(m,'Data','date',{type:'date'})+inp(m,'Początek','time',{type:'time'})+inp(m,'Koniec','timeEnd',{type:'time'})+'</div>'+
     inp(m,'Miejsce','place',{ph:'np. sala nr 12'})+'</div>';
@@ -1947,6 +1950,7 @@ const ACTIONS={
   },
   anndel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='a'+id){ui.confirm='a'+id;render();return;}db.ann=(db.ann||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto ogłoszenie.');},
   addnote(){
+    if(!canSeeNotes())return;
     const d=ui.noteDraft||{};
     if(!String(d.text||'').trim()){toast('Napisz treść notatki.');return;}
     const me=curMember();
@@ -1957,8 +1961,9 @@ const ACTIONS={
     ui.noteDraft={author:d.author||'',ref:'',text:''};
     save();render();toast('Dodano notatkę.');
   },
-  notedone(el){const n=(db.notes||[]).find(x=>x.id===el.dataset.id);if(!n)return;n.done=!n.done;save();render();},
+  notedone(el){if(!canSeeNotes())return;const n=(db.notes||[]).find(x=>x.id===el.dataset.id);if(!n)return;n.done=!n.done;save();render();},
   delnote(el){
+    if(!canSeeNotes())return;
     const id=el.dataset.id;if(ui.confirm!=='n'+id){ui.confirm='n'+id;render();return;}
     db.notes=(db.notes||[]).filter(x=>x.id!==id);save();ui.confirm=null;render();
   },
