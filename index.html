@@ -421,7 +421,7 @@ input:disabled{opacity:.55}
   function META(r){return {body:r.body||'',mode:r.mode||'',cel:r.cel||'',kwota:r.kwota||'',subject:r.subject||'',date:r.date||'',status:r.status||'',num:r.num==null?'':r.num,year:r.year==null?'':r.year};}
   function merge(){
     var pub=C.pub||{},prv=C.priv||{},polls=pub.polls||{};
-    var d={v:1,flags:prv.flags||{},settings:J(pub.settings)||{},members:J(pub.members)||[],events:J(pub.events)||[],ann:J(pub.ann)||[],docs:J(pub.docs)||[],
+    var d={v:1,flags:prv.flags||{},settings:J(pub.settings)||{},members:J(pub.members)||[],events:J(pub.events)||[],ann:J(pub.ann)||[],docs:J(pub.docs)||[],duesStats:J(pub.duesStats)||[],
       meetings:J(prv.meetings)||[],resolutions:[],reports:J(prv.reports)||[],notes:[]};
     if(isPriv){
       d.resolutions=(J(prv.resolutions)||[]).map(function(r){var p=polls[r.id];if(p)r.poll={open:!!p.open,votes:{}};return r;});
@@ -456,7 +456,7 @@ input:disabled{opacity:.55}
     if(isPriv){
       var polls={};
       (obj.resolutions||[]).forEach(function(r){if(r.poll)polls[r.id]={open:!!r.poll.open,meta:META(r)};});
-      var pub={settings:obj.settings||{},members:obj.members||[],events:obj.events||[],ann:obj.ann||[],docs:obj.docs||[],polls:polls};
+      var pub={settings:obj.settings||{},members:obj.members||[],events:obj.events||[],ann:obj.ann||[],docs:obj.docs||[],duesStats:obj.duesStats||[],polls:polls};
       var prv={flags:obj.flags||{},meetings:obj.meetings||[],reports:obj.reports||[],
         resolutions:(obj.resolutions||[]).map(function(r){var c=J(r);delete c.poll;return c;})};
       if(JSON.stringify(pub)!==JSON.stringify(C.pub)){C.pub=J(pub);ps.push(putDoc('app/pub',pub));}
@@ -647,7 +647,7 @@ function defaults(){
       {id:uid(),name:'Agnieszka Lustyk',func:'Zastępca przewodniczącej',cls:'',g:'f',pin:'',canEdit:true},
       {id:uid(),name:'Anna Dwojak',func:'Sekretarz',cls:'',g:'f',pin:'',canEdit:true}
     ],
-    meetings:[],resolutions:[],reports:[],notes:[],docs:[],events:[],ann:[]};
+    meetings:[],resolutions:[],reports:[],notes:[],docs:[],events:[],ann:[],duesStats:[]};
 }
 
 /* ---------- ludzie i podpisy ---------- */
@@ -1060,9 +1060,10 @@ const ICONS={
   dokumenty:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   glosowanie:'<path d="M4 12h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M8 12V4h8v8"/><path d="m10 8 1.5 1.5L14 7"/>',
   kalendarz:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/><circle cx="8.5" cy="15" r="1.3"/><circle cx="15.5" cy="15" r="1.3"/>',
+  statystyki:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
   ustawienia:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'
 };
-const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['glosowanie','Głosowanie','k-resolution'],['kalendarz','Kalendarz','k-cal'],['sprawozdania','Sprawozdania','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
+const TABS=[['pulpit','Pulpit','k-pulpit'],['zebrania','Zebrania','k-meeting'],['uchwaly','Uchwały','k-resolution'],['glosowanie','Głosowanie','k-resolution'],['kalendarz','Kalendarz','k-cal'],['sprawozdania','Sprawozdania','k-report'],['statystyki','Statystyki','k-report'],['dokumenty','Dokumenty','k-doc'],['notatnik','Notatnik','k-note'],['czlonkowie','Członkowie','k-member'],['ustawienia','Ustawienia','k-settings']];
 const KIND_CLASS={meeting:'k-meeting',resolution:'k-resolution',report:'k-report',doc:'k-doc'};
 const REPORT_NAMES={dzialalnosc:'Sprawozdanie z działalności',finansowe:'Sprawozdanie finansowe',zebranie:'Sprawozdanie z zebrania'};
 
@@ -1078,6 +1079,8 @@ function resolveRoot(s){
   if(s==='notedraft')return ui.noteDraft;
   if(s==='evdraft')return ui.evDraft;
   if(s==='anndraft')return ui.annDraft;
+  if(s&&s.indexOf('evitem:')===0){const id=s.slice(7);ui.evItemDrafts=ui.evItemDrafts||{};return ui.evItemDrafts[id]=ui.evItemDrafts[id]||{cls:'',text:'',qty:''};}
+  if(s&&s.indexOf('dues:')===0)return (db.duesStats||[]).find(x=>x.id===s.slice(5));
   if(s==='pin')return ui;
   if(s&&s.indexOf('member:')===0)return db.members.find(x=>x.id===s.slice(7));
   return null;
@@ -1192,6 +1195,42 @@ function calItems(){
 }
 function isoOf(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
 function itemsOn(iso,items){return items.filter(i=>i.date<=iso&&i.end>=iso);}
+function evClasses(){return [...new Set(db.members.map(m=>String(m.cls||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pl'));}
+function evMissingClasses(e){
+  const all=evClasses();if(!all.length)return [];
+  const have=new Set((e.items||[]).map(it=>String(it.cls||'').trim().toLowerCase()).filter(Boolean));
+  return all.filter(c=>!have.has(c.toLowerCase()));
+}
+function evItemsBlock(e){
+  const items=e.items||[],me=curMember(),missing=evMissingClasses(e);
+  const d=(ui.evItemDrafts=ui.evItemDrafts||{})[e.id]=ui.evItemDrafts[e.id]||{cls:'',text:'',qty:''};
+  let h='<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px;display:flex;align-items:center;gap:8px">Lista zgłoszeń – kto co przynosi'+
+    (missing.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'')+'</h3>';
+  if(missing.length)h+='<p class="hint" style="margin:0 0 8px;color:#C62F2F">Jeszcze nie zgłosiły: '+missing.map(c=>esc(c)).join(', ')+'.</p>';
+  if(items.length){
+    h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Co przynosi</th><th>Ilość</th><th></th></tr></thead><tbody>'+
+      items.map(it=>{
+        const mine=!!(me&&it.memberId===me.id);
+        return '<tr><td>'+esc(it.cls||'')+'</td><td>'+esc(it.text||'')+'</td><td>'+esc(it.qty||'')+'</td><td>'+
+          ((mine||canPlan())&&!ui.readOnly?'<button class="btn small ghost" data-act="evitemdel" data-id="'+e.id+'" data-item="'+it.id+'">Usuń</button>':'')+
+          '</td></tr>';
+      }).join('')+'</tbody></table>';
+  }else h+='<p class="hint" style="margin:0">Nikt jeszcze nic nie zgłosił.</p>';
+  if(me&&!ui.readOnly){
+    h+='<div class="g3" data-root="evitem:'+e.id+'" style="margin-top:10px">'+
+      inp(d,'Klasa','cls',{ph:'np. 3a'})+
+      inp(d,'Co przynosi','text',{ph:'np. sernik'})+
+      inp(d,'Ilość','qty',{ph:'np. 2 szt'})+
+      '</div><div class="moreacts" style="margin-top:6px"><button class="btn small primary" data-act="evitemadd" data-id="'+e.id+'">Dodaj zgłoszenie</button></div>';
+  }
+  if(items.length){
+    h+='<div class="moreacts" style="margin-top:10px">'+
+      '<button class="btn small" data-act="evitemxls" data-id="'+e.id+'">Pobierz jako Excel</button>'+
+      '<button class="btn small" data-act="evitemdoc" data-id="'+e.id+'">Pobierz jako Word</button>'+
+      '</div>';
+  }
+  return h+'</div>';
+}
 function evHelpBlock(e){
   const help=e.help||{},ids=Object.keys(help).filter(id=>help[id]);
   const me=curMember(),meHelping=!!(me&&help[me.id]);
@@ -1204,10 +1243,11 @@ function evHelpBlock(e){
 function evRow(i,withActs){
   const p=i.date.split('-'),cls=i.kind==='mt'?' mt':i.kind==='fr'?' fr':'';
   const meta=[i.end!==i.date?'do '+fmtDate(i.end):'',i.time,i.place].filter(Boolean).join(' · ');
-  let h='<div class="evrow"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+'</div>'+
+  const missingDot=i.kind==='ev'&&i.src&&i.src.type==='impreza'&&evMissingClasses(i.src).length?' <span class="vwarn" style="font-size:11px" title="Nie wszystkie klasy się zgłosiły"><i style="width:16px;height:16px;font-size:11px">!</i></span>':'';
+  let h='<div class="evrow"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+missingDot+'</div>'+
     '<div class="m">'+(i.kind==='mt'?'Zebranie':i.kind==='fr'?'Dzień wolny od zajęć':'Wydarzenie')+(meta?' · '+esc(meta):'')+'</div>'+(i.desc?'<div class="d">'+esc(i.desc)+'</div>':'');
   if(withActs&&i.meeting&&!isRep(curMember()))h+='<p style="margin:6px 0 0"><button class="btn small" data-act="open" data-kind="meeting" data-id="'+i.id+'">Otwórz zebranie</button></p>';
-  if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza')h+=evHelpBlock(i.src);
+  if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza'){h+=evHelpBlock(i.src);h+=evItemsBlock(i.src);}
   if(withActs&&!i.meeting&&canPlan()){
     h+='<div class="moreacts" style="margin-top:6px"><button class="btn small" data-act="evedit" data-id="'+i.id+'">Zmień</button>'+
       (ui.confirm==='e'+i.id?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn small warn" data-act="evdel" data-id="'+i.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':'<button class="btn small ghost" data-act="evdel" data-id="'+i.id+'">Usuń</button>')+'</div>';
@@ -1500,6 +1540,8 @@ function listHtml(){
     else h+='<div class="list">'+ds.map(docCard).join('')+'</div>';
   }else if(ui.tab==='notatnik'){
     h+=notatnikHtml();
+  }else if(ui.tab==='statystyki'){
+    h+=statystykiHtml();
   }else if(ui.tab==='czlonkowie'){
     h+=head('Członkowie','Lista do obecności, podpisów i dostępów',isAdmin()?'<button class="btn primary" data-act="addmember">Dodaj osobę</button>':'');
     const ms=[...db.members].sort(byFunc);
@@ -1544,6 +1586,33 @@ function notatnikHtml(){
     h+='<p class="hint" style="margin-top:14px">Twoje uwagi zobaczy Prezydium (Przewodnicząca, Zastępca i Sekretarz). Poniżej Twoje dotychczasowe wpisy.</p>';
     if(mine.length)h+='<div class="list">'+mine.map(noteCard).join('')+'</div>';
   }
+  return h;
+}
+function duesForYear(y){return (db.duesStats||[]).filter(x=>x.year===y).sort((a,b)=>String(a.cls||'').localeCompare(String(b.cls||''),'pl'));}
+function duesTotalHtml(){
+  const rows=duesForYear(viewYear);
+  const totS=rows.reduce((a,r)=>a+(Number(r.students)||0),0),totP=rows.reduce((a,r)=>a+(Number(r.paid)||0),0);
+  return '<p class="hint" id="duestotal" style="margin-top:10px">'+(totS>0?'Łącznie: '+totP+' z '+totS+' uczniów – <b>'+(Math.round(totP/totS*1000)/10)+'%</b>.':'Wpisz liczbę uczniów, aby zobaczyć łączny procent.')+'</p>';
+}
+function statystykiHtml(){
+  const rows=duesForYear(viewYear);
+  let h=head('Statystyki','Wpłaty na Radę Rodziców wg klas',locked()?'':'<button class="btn primary" data-act="duesaddrow">+ Dodaj klasę</button>');
+  h+=yearBar();
+  if(!rows.length){
+    h+=emptyBox('Brak danych dla roku '+esc(syLabel(viewYear)),locked()?'Nic tu jeszcze nie wpisano.':'Dodaj pierwszą klasę i wpisz liczbę uczniów oraz liczbę wpłat.',locked()?'':'<br><button class="btn primary" data-act="duesaddrow">Dodaj klasę</button>');
+    return h;
+  }
+  h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Uczniów</th><th>Wpłat</th><th>%</th>'+(locked()?'':'<th></th>')+'</tr></thead><tbody>'+
+    rows.map(r=>{
+      const s=Number(r.students)||0,pd=Number(r.paid)||0,pct=s>0?(Math.round(pd/s*1000)/10)+'%':'–';
+      if(locked())return '<tr><td>'+esc(r.cls||'')+'</td><td>'+s+'</td><td>'+pd+'</td><td>'+pct+'</td></tr>';
+      const root='data-root="dues:'+r.id+'"';
+      return '<tr '+root+'><td><input data-bind="cls" value="'+esc(r.cls||'')+'" style="width:70px" placeholder="np. 3a"></td>'+
+        '<td><input type="number" min="0" data-bind="students" data-type="num" value="'+(r.students==null?'':r.students)+'" style="width:70px"></td>'+
+        '<td><input type="number" min="0" data-bind="paid" data-type="num" value="'+(r.paid==null?'':r.paid)+'" style="width:70px"></td>'+
+        '<td id="duespct-'+r.id+'">'+pct+'</td>'+
+        '<td><button class="btn small ghost" data-act="duesdelrow" data-id="'+r.id+'">Usuń</button></td></tr>';
+    }).join('')+'</tbody></table>'+duesTotalHtml();
   return h;
 }
 function noteCard(n){
@@ -1760,7 +1829,7 @@ function onBind(t){
   if(rk!=='pin'){
     if(ui.readOnly)return;
     if(rk==='evdraft'||rk==='anndraft'){if(!canPlan())return;}
-    else if(rk!=='notedraft'){
+    else if(rk!=='notedraft'&&rk.indexOf('evitem:')!==0){
       if(rk.indexOf('member:')===0||rk==='settings'){if(!isAdmin())return;}
       else if(locked())return;
     }
@@ -1770,7 +1839,7 @@ function onBind(t){
   let v=t.type==='checkbox'?t.checked:(t.dataset.type==='num'?(t.value===''?'':Number(t.value)):t.value);
   setP(root,p,v);
   if(rk==='bulk'){const pv=document.getElementById('bulkprev');if(pv)pv.innerHTML=bulkPrev();return;}
-  if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft')return;
+  if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft'||rk.indexOf('evitem:')===0)return;
   const e=ui.editing;
   if(e&&e.kind==='resolution'&&root===getRec()){
     const r=root;
@@ -1785,6 +1854,12 @@ function onBind(t){
     const m=db.meetings.find(x=>x.id===root.meetingId);if(m)root.text=meetingSummary(m);
   }
   if(e&&e.kind==='doc'&&root===getRec()){root.updated=todayISO();}
+  if(rk.indexOf('dues:')===0&&root){
+    const el=document.getElementById('duespct-'+root.id);
+    if(el){const s=Number(root.students)||0,pd=Number(root.paid)||0;el.textContent=s>0?(Math.round(pd/s*1000)/10)+'%':'–';}
+    const tot=document.getElementById('duestotal');if(tot)tot.outerHTML=duesTotalHtml();
+    save();return;
+  }
   save();
   if(t.dataset.re){render();return;}
   if(ui.editing){refreshPreview();updateLive();}
@@ -1979,6 +2054,52 @@ const ACTIONS={
     if(e.help[me.id])delete e.help[me.id];else e.help[me.id]=true;
     save();render();
   },
+  evitemadd(el){
+    const me=curMember();if(!me){toast('Zaloguj się swoim PIN-em, aby dodać zgłoszenie.');return;}
+    const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
+    const d=(ui.evItemDrafts||{})[id]||{};
+    const clsV=String(d.cls||'').trim(),textV=String(d.text||'').trim(),qtyV=String(d.qty||'').trim();
+    if(!clsV||!textV){toast('Wpisz klasę i co przynosicie.');return;}
+    e.items=e.items||[];
+    e.items.push({id:uid(),cls:clsV,text:textV,qty:qtyV,author:me.name,memberId:me.id});
+    ui.evItemDrafts[id]={cls:'',text:'',qty:''};
+    save();render();toast('Dodano zgłoszenie.');
+  },
+  evitemdel(el){
+    const id=el.dataset.id,itemId=el.dataset.item,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
+    const me=curMember(),it=(e.items||[]).find(x=>x.id===itemId);if(!it)return;
+    if(!(canPlan()||(me&&it.memberId===me.id)))return;
+    e.items=(e.items||[]).filter(x=>x.id!==itemId);
+    save();render();toast('Usunięto zgłoszenie.');
+  },
+  evitemxls(el){
+    const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
+    const items=e.items||[];if(!items.length){toast('Brak zgłoszeń do pobrania.');return;}
+    const rows=[['Klasa','Co przynosi','Ilość']].concat(items.map(it=>[it.cls||'',it.text||'',it.qty||'']));
+    const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    saveFile(blob,asciiName('Zgloszenia_'+e.title+'_'+e.date)+'.csv');
+  },
+  evitemdoc(el){
+    const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
+    const items=e.items||[];if(!items.length){toast('Brak zgłoszeń do pobrania.');return;}
+    const model=[{k:'header',text:db.settings.school},{k:'title',text:'Lista zgłoszeń – '+e.title},
+      {k:'p',text:'Termin: '+fmtDate(e.date)+(e.place?', miejsce: '+e.place:'')},
+      {k:'table',widths:[20,50,30],head:['Klasa','Co przynosi','Ilość'],rows:items.map(it=>[it.cls||'',it.text||'',it.qty||'']),aligns:['left','left','center']}];
+    saveDocx(model,'Lista zgłoszeń',asciiName('Zgloszenia_'+e.title+'_'+e.date)+'.docx');
+  },
+  duesaddrow(){
+    if(locked())return;
+    db.duesStats=db.duesStats||[];
+    db.duesStats.push({id:uid(),cls:'',students:'',paid:'',year:viewYear});
+    save();render();
+  },
+  duesdelrow(el){
+    if(locked())return;
+    const id=el.dataset.id;
+    db.duesStats=(db.duesStats||[]).filter(x=>x.id!==id);
+    save();render();
+  },
   annnew(){if(!canPlan())return;ui.annDraft={text:'',until:''};ui.focusBind='text';render();},
   anncancel(){ui.annDraft=null;render();},
   annsave(){
@@ -2060,7 +2181,7 @@ const ACTIONS={
   }
 };
 const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
-const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
+const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','evitemadd','evitemdel','evitemxls','evitemdoc','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
   const act=el.dataset.act;
