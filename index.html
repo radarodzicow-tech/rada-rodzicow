@@ -1024,6 +1024,7 @@ async function boot(){
         let json=null;
         try{json=JSON.stringify(data);}catch(e){}
         if(json!==null&&json===lastPushed){db=normalize(data);return;}
+        if(ui.editing)return;
         db=normalize(data);render();
       },()=>{});
     }catch(e){}
