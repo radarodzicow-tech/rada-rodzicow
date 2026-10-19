@@ -1218,15 +1218,17 @@ function evDlHtml(e){
     '</div>';
 }
 function evItemsBlock(e){
-  const me=curMember(),missing=evMissingClasses(e),rows=evContribRows(e),editable=!!me&&!ui.readOnly;
+  const me=curMember(),missing=evMissingClasses(e),rows=evContribRows(e),mine=canPlan();
   let h='<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px;display:flex;align-items:center;gap:8px">Lista zgłoszeń – kto co przynosi'+
     (missing.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'')+'</h3>';
   h+=evMissingHtml(e.id,missing);
+  if(!mine)h+='<p class="hint" style="margin:0 0 8px">Możesz uzupełnić wiersz swojej klasy; resztę widzisz do odczytu.</p>';
   if(!rows.length)h+='<p class="hint" style="margin:0">Dodaj najpierw członków z przypisaną klasą w zakładce Członkowie.</p>';
   else{
     h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Babeczki</th><th>Ciasta</th><th>Inne</th></tr></thead><tbody>'+
       rows.map(r=>{
-        if(!editable)return '<tr><td>'+esc(r.cls)+'</td><td>'+esc(r.v.babeczki||'')+'</td><td>'+esc(r.v.ciasto||'')+'</td><td>'+esc(r.v.inne||'')+'</td></tr>';
+        const canEditRow=!ui.readOnly&&me&&(mine||String(me.cls||'').trim()===r.cls);
+        if(!canEditRow)return '<tr><td>'+esc(r.cls)+'</td><td>'+esc(r.v.babeczki||'')+'</td><td>'+esc(r.v.ciasto||'')+'</td><td>'+esc(r.v.inne||'')+'</td></tr>';
         const root='data-root="evcontrib:'+e.id+':'+esc(r.cls)+'"';
         return '<tr '+root+'><td>'+esc(r.cls)+'</td>'+
           '<td><input data-bind="babeczki" value="'+esc(r.v.babeczki||'')+'" style="width:60px" placeholder="szt."></td>'+
@@ -1313,6 +1315,12 @@ function annHtml(){
         (canPlan()?(ui.confirm==='a'+a.id?' <span class="confirmrow"><button class="btn small warn" data-act="anndel" data-id="'+a.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':' · <button class="btn small ghost" style="padding:2px 8px" data-act="anndel" data-id="'+a.id+'">Usuń</button>'):'')+'</div></div>').join(''):'<p class="hint" style="margin:0">Brak ogłoszeń. Dodane tu ogłoszenie zobaczy każdy po zalogowaniu.</p>')+'</div>';
   }
   return h;
+}
+function evSignupCard(){
+  const today=todayISO();
+  const ev=(db.events||[]).filter(e=>e.type==='impreza'&&e.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  if(!ev)return '';
+  return '<div class="card k-cal"><h3 style="margin:0 0 8px">Zgłoszenia na wydarzenie</h3><p class="hint" style="margin:0 0 10px">'+esc(ev.title)+' · '+fmtDate(ev.date)+'</p><button class="btn primary" data-act="goevent" data-id="'+ev.id+'">Przejdź do zgłoszeń</button></div>';
 }
 function upcomingCard(){
   const today=todayISO(),up=calItems().filter(i=>i.end>=today).slice(0,3);
@@ -1457,7 +1465,7 @@ function repCard(r){
 }
 function statBox(n,l){return '<div class="stat"><b>'+esc(n)+'</b><span>'+esc(l)+'</span></div>';}
 function pulpitHtml(){
-  if(isRep(curMember())){let r=head('Pulpit','Witaj, '+esc(curMember().name)+'! Najważniejsze informacje Rady Rodziców','');r+=annHtml()+upcomingCard();const op=openPolls().filter(x=>canVote(curMember(),x));r+=op.length?'<div class="card"><h3>Trwające głosowania</h3><p class="hint" style="margin:0 0 8px">Głosowań, w których bierzesz udział: '+op.length+'.</p><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>':'';if(r.indexOf('class="card')<0)r+=emptyBox('Na razie nic nowego','Tu pojawią się ogłoszenia Prezydium i najbliższe wydarzenia.','');return r;}
+  if(isRep(curMember())){let r=head('Pulpit','Witaj, '+esc(curMember().name)+'! Najważniejsze informacje Rady Rodziców','');r+=annHtml()+upcomingCard()+evSignupCard();const op=openPolls().filter(x=>canVote(curMember(),x));r+=op.length?'<div class="card"><h3>Trwające głosowania</h3><p class="hint" style="margin:0 0 8px">Głosowań, w których bierzesz udział: '+op.length+'.</p><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>':'';if(r.indexOf('class="card')<0)r+=emptyBox('Na razie nic nowego','Tu pojawią się ogłoszenia Prezydium i najbliższe wydarzenia.','');return r;}
   const ms=db.meetings.filter(m=>inSY(m.date,viewYear)),rs=db.resolutions.filter(r=>inSY(r.date,viewYear)||(blank(r.year)&&false)),
     rp=db.reports.filter(r=>r.sy&&syFromLabel(r.sy)===viewYear);
   const rsAll=db.resolutions.filter(r=>ui.allYears?true:num(r.year)===viewYear);
@@ -1468,7 +1476,7 @@ function pulpitHtml(){
   const lastRes=[...rsAll].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,3);
   let h=yearBar();
   h+=head('Pulpit','Rok szkolny '+esc(syLabel(viewYear))+' (wrzesień–czerwiec) – wszystko w jednym miejscu','');
-  h+=annHtml()+upcomingCard();
+  h+=annHtml()+upcomingCard()+evSignupCard();
   h+='<div class="stats">'+statBox(ms.length,'zebrań')+statBox(rs.length,'uchwał')+statBox(money(kw)+' zł','wydatków poza preliminarzem')+statBox(rp.length,'sprawozdań')+'</div>';
   if(!locked()){
     h+='<div class="card"><h3>Szybkie dodawanie</h3><div class="moreacts">'+
@@ -1836,7 +1844,11 @@ function onBind(t){
   if(rk!=='pin'){
     if(ui.readOnly)return;
     if(rk==='evdraft'||rk==='anndraft'){if(!canPlan())return;}
-    else if(rk!=='notedraft'&&rk.indexOf('evitem:')!==0&&rk.indexOf('evcontrib:')!==0){
+    else if(rk.indexOf('evcontrib:')===0){
+      const rest=rk.slice(10),ci=rest.indexOf(':'),rcls=rest.slice(ci+1),me=curMember();
+      if(!(canPlan()||(me&&String(me.cls||'').trim()&&String(me.cls||'').trim()===rcls)))return;
+    }
+    else if(rk!=='notedraft'&&rk.indexOf('evitem:')!==0){
       if(rk.indexOf('member:')===0||rk==='settings'){if(!isAdmin())return;}
       else if(locked())return;
     }
@@ -1944,6 +1956,7 @@ function readImport(inp){
 }
 const ACTIONS={
   tab(el){ui.tab=el.dataset.v;ui.editing=null;ui.confirm=null;ui.sel=null;render(false);window.scrollTo(0,0);},
+  goevent(el){const id=el.dataset.id,ev=(db.events||[]).find(x=>x.id===id);if(!ev)return;ui.tab='kalendarz';ui.calM=ev.date.slice(0,7);ui.calDay=ev.date;ui.editing=null;ui.confirm=null;ui.sel=null;render(false);window.scrollTo(0,0);},
   open(el){if(isRep(curMember())&&el.dataset.kind!=='doc'){toast('Ten dokument jest dostępny tylko dla Prezydium.');return;}ui.editing={kind:el.dataset.kind,id:el.dataset.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   back(){ui.editing=null;ui.confirm=null;render(false);window.scrollTo(0,0);},
   new(el){const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
@@ -2182,7 +2195,7 @@ const ACTIONS={
     save();ui.bulk=null;render();toast('Dodano uchwał: '+it.length+'. Sprawdź daty i nazwy.');
   }
 };
-const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
+const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','goevent','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
 const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','evitemxls','evitemdoc','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
