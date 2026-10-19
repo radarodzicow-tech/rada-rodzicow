@@ -17,6 +17,7 @@
   --lav:#E6E1FA;--lav-d:#5648AE;--mint:#D8F0E4;--mint-d:#2A7657;--peach:#FFE3D4;--peach-d:#9C4B29;
   --butter:#FFF1C7;--butter-d:#725A0C;--rose:#FADBE6;--rose-d:#9B3560;--sky:#DCEBFC;--sky-d:#265C94;
   --lemon:#EAF2C8;--lemon-d:#596B1C;
+  --rose-tint1:#FDEFF4;--rose-tint2:#FEF7FA;
   --shadow:0 1px 2px rgba(60,50,110,.06),0 8px 24px rgba(60,50,110,.07);
 }
 @media (prefers-color-scheme:dark){
@@ -26,6 +27,7 @@
     --lav:#3A3466;--lav-d:#D2CBFF;--mint:#1F3B31;--mint-d:#A0E4C5;--peach:#48301F;--peach-d:#FFC9A8;
     --butter:#463B17;--butter-d:#F6DE8B;--rose:#4A2635;--rose-d:#F7B7CD;--sky:#203A52;--sky-d:#9CC4EE;
     --lemon:#323D14;--lemon-d:#D6E79A;
+    --rose-tint1:#372537;--rose-tint2:#2F2537;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
   }
 }
@@ -35,6 +37,7 @@
   --lav:#3A3466;--lav-d:#D2CBFF;--mint:#1F3B31;--mint-d:#A0E4C5;--peach:#48301F;--peach-d:#FFC9A8;
   --butter:#463B17;--butter-d:#F6DE8B;--rose:#4A2635;--rose-d:#F7B7CD;--sky:#203A52;--sky-d:#9CC4EE;
   --lemon:#323D14;--lemon-d:#D6E79A;
+  --rose-tint1:#372537;--rose-tint2:#2F2537;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box}
@@ -241,12 +244,12 @@ input:disabled{opacity:.55}
 .sh-table th{background:#ededed}
 .evtablewrap{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin:10px 0 4px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow)}
 .ev-table{width:100%;min-width:300px;table-layout:fixed;border-collapse:collapse;font-size:13.5px;background:var(--surface)}
-.ev-table th{background:color-mix(in srgb,var(--rose) 45%,var(--surface));color:var(--rose-d);font-weight:700;text-align:left;padding:10px 10px;font-size:12.5px;overflow-wrap:break-word;border-bottom:1px solid var(--line)}
+.ev-table th{background:var(--rose-tint1);color:var(--rose-d);font-weight:700;text-align:left;padding:10px 10px;font-size:12.5px;overflow-wrap:break-word;border-bottom:1px solid var(--line)}
 .ev-table td{padding:10px;vertical-align:middle;overflow-wrap:break-word;border-bottom:1px solid var(--line)}
 .ev-table tr:last-child td{border-bottom:none}
 .ev-table td.num{text-align:center}
 .ev-table th.num{text-align:center}
-.ev-table tr.mine{background:color-mix(in srgb,var(--rose) 22%,var(--surface))}
+.ev-table tr.mine{background:var(--rose-tint2)}
 .ev-table td.empty{color:var(--muted)}
 .ev-table input{width:100%;min-height:38px;padding:6px 8px;font-size:13.5px;border-radius:11px;text-align:left;box-sizing:border-box}
 .ev-table input.num{text-align:center;padding:6px 4px}
