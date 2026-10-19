@@ -1080,6 +1080,7 @@ function resolveRoot(s){
   if(s==='evdraft')return ui.evDraft;
   if(s==='anndraft')return ui.annDraft;
   if(s&&s.indexOf('evitem:')===0){const id=s.slice(7);ui.evItemDrafts=ui.evItemDrafts||{};return ui.evItemDrafts[id]=ui.evItemDrafts[id]||{cls:'',text:'',qty:''};}
+  if(s&&s.indexOf('evcontrib:')===0){const rest=s.slice(10),i=rest.indexOf(':'),eid=rest.slice(0,i),cls=rest.slice(i+1);const ev=(db.events||[]).find(x=>x.id===eid);if(!ev)return null;ev.contrib=ev.contrib||{};return ev.contrib[cls]=ev.contrib[cls]||{babeczki:'',ciasto:'',inne:''};}
   if(s&&s.indexOf('dues:')===0)return (db.duesStats||[]).find(x=>x.id===s.slice(5));
   if(s==='pin')return ui;
   if(s&&s.indexOf('member:')===0)return db.members.find(x=>x.id===s.slice(7));
@@ -1196,39 +1197,45 @@ function calItems(){
 function isoOf(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
 function itemsOn(iso,items){return items.filter(i=>i.date<=iso&&i.end>=iso);}
 function evClasses(){return [...new Set(db.members.map(m=>String(m.cls||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pl'));}
+function evContribRows(e){
+  const c=e.contrib||{};
+  return evClasses().map(cls=>({cls:cls,v:c[cls]||{babeczki:'',ciasto:'',inne:''}}));
+}
 function evMissingClasses(e){
   const all=evClasses();if(!all.length)return [];
-  const have=new Set((e.items||[]).map(it=>String(it.cls||'').trim().toLowerCase()).filter(Boolean));
-  return all.filter(c=>!have.has(c.toLowerCase()));
+  const c=e.contrib||{};
+  return all.filter(cls=>{const v=c[cls];return !v||(!String(v.babeczki||'').trim()&&!String(v.ciasto||'').trim()&&!String(v.inne||'').trim());});
+}
+function evMissingHtml(eid,missing){
+  return '<p class="hint" id="evmissing-'+eid+'" style="margin:0 0 8px'+(missing.length?';color:#C62F2F':'')+'">'+
+    (missing.length?'Jeszcze nie zgłosiły: '+missing.map(c=>esc(c)).join(', ')+'.':'Wszystkie klasy się zgłosiły.')+'</p>';
+}
+function evDlHtml(e){
+  const any=evContribRows(e).some(r=>String(r.v.babeczki||'').trim()||String(r.v.ciasto||'').trim()||String(r.v.inne||'').trim());
+  return '<div class="moreacts" style="margin-top:10px" id="evdl-'+e.id+'">'+
+    (any?'<button class="btn small" data-act="evitemxls" data-id="'+e.id+'">Pobierz jako Excel</button>'+
+      '<button class="btn small" data-act="evitemdoc" data-id="'+e.id+'">Pobierz jako Word</button>':'')+
+    '</div>';
 }
 function evItemsBlock(e){
-  const items=e.items||[],me=curMember(),missing=evMissingClasses(e);
-  const d=(ui.evItemDrafts=ui.evItemDrafts||{})[e.id]=ui.evItemDrafts[e.id]||{cls:'',text:'',qty:''};
+  const me=curMember(),missing=evMissingClasses(e),rows=evContribRows(e),editable=!!me&&!ui.readOnly;
   let h='<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px;display:flex;align-items:center;gap:8px">Lista zgłoszeń – kto co przynosi'+
     (missing.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'')+'</h3>';
-  if(missing.length)h+='<p class="hint" style="margin:0 0 8px;color:#C62F2F">Jeszcze nie zgłosiły: '+missing.map(c=>esc(c)).join(', ')+'.</p>';
-  if(items.length){
-    h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Co przynosi</th><th>Ilość</th><th></th></tr></thead><tbody>'+
-      items.map(it=>{
-        const mine=!!(me&&it.memberId===me.id);
-        return '<tr><td>'+esc(it.cls||'')+'</td><td>'+esc(it.text||'')+'</td><td>'+esc(it.qty||'')+'</td><td>'+
-          ((mine||canPlan())&&!ui.readOnly?'<button class="btn small ghost" data-act="evitemdel" data-id="'+e.id+'" data-item="'+it.id+'">Usuń</button>':'')+
-          '</td></tr>';
+  h+=evMissingHtml(e.id,missing);
+  if(!rows.length)h+='<p class="hint" style="margin:0">Dodaj najpierw członków z przypisaną klasą w zakładce Członkowie.</p>';
+  else{
+    h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Babeczki</th><th>Ciasta</th><th>Inne</th></tr></thead><tbody>'+
+      rows.map(r=>{
+        if(!editable)return '<tr><td>'+esc(r.cls)+'</td><td>'+esc(r.v.babeczki||'')+'</td><td>'+esc(r.v.ciasto||'')+'</td><td>'+esc(r.v.inne||'')+'</td></tr>';
+        const root='data-root="evcontrib:'+e.id+':'+esc(r.cls)+'"';
+        return '<tr '+root+'><td>'+esc(r.cls)+'</td>'+
+          '<td><input data-bind="babeczki" value="'+esc(r.v.babeczki||'')+'" style="width:60px" placeholder="szt."></td>'+
+          '<td><input data-bind="ciasto" value="'+esc(r.v.ciasto||'')+'" style="width:60px" placeholder="szt."></td>'+
+          '<td><input data-bind="inne" value="'+esc(r.v.inne||'')+'" style="width:120px" placeholder="np. owoce"></td>'+
+          '</tr>';
       }).join('')+'</tbody></table>';
-  }else h+='<p class="hint" style="margin:0">Nikt jeszcze nic nie zgłosił.</p>';
-  if(me&&!ui.readOnly){
-    h+='<div class="g3" data-root="evitem:'+e.id+'" style="margin-top:10px">'+
-      inp(d,'Klasa','cls',{ph:'np. 3a'})+
-      inp(d,'Co przynosi','text',{ph:'np. sernik'})+
-      inp(d,'Ilość','qty',{ph:'np. 2 szt'})+
-      '</div><div class="moreacts" style="margin-top:6px"><button class="btn small primary" data-act="evitemadd" data-id="'+e.id+'">Dodaj zgłoszenie</button></div>';
   }
-  if(items.length){
-    h+='<div class="moreacts" style="margin-top:10px">'+
-      '<button class="btn small" data-act="evitemxls" data-id="'+e.id+'">Pobierz jako Excel</button>'+
-      '<button class="btn small" data-act="evitemdoc" data-id="'+e.id+'">Pobierz jako Word</button>'+
-      '</div>';
-  }
+  h+=evDlHtml(e);
   return h+'</div>';
 }
 function evHelpBlock(e){
@@ -1829,7 +1836,7 @@ function onBind(t){
   if(rk!=='pin'){
     if(ui.readOnly)return;
     if(rk==='evdraft'||rk==='anndraft'){if(!canPlan())return;}
-    else if(rk!=='notedraft'&&rk.indexOf('evitem:')!==0){
+    else if(rk!=='notedraft'&&rk.indexOf('evitem:')!==0&&rk.indexOf('evcontrib:')!==0){
       if(rk.indexOf('member:')===0||rk==='settings'){if(!isAdmin())return;}
       else if(locked())return;
     }
@@ -1858,6 +1865,17 @@ function onBind(t){
     const el=document.getElementById('duespct-'+root.id);
     if(el){const s=Number(root.students)||0,pd=Number(root.paid)||0;el.textContent=s>0?(Math.round(pd/s*1000)/10)+'%':'–';}
     const tot=document.getElementById('duestotal');if(tot)tot.outerHTML=duesTotalHtml();
+    save();return;
+  }
+  if(rk.indexOf('evcontrib:')===0){
+    const rest=rk.slice(10),i2=rest.indexOf(':'),eid=rest.slice(0,i2);
+    const ev=(db.events||[]).find(x=>x.id===eid);
+    if(ev){
+      const miss=document.getElementById('evmissing-'+eid);
+      if(miss){const m=evMissingClasses(ev);miss.outerHTML=evMissingHtml(eid,m);}
+      const dl=document.getElementById('evdl-'+eid);
+      if(dl)dl.outerHTML=evDlHtml(ev);
+    }
     save();return;
   }
   save();
@@ -2054,38 +2072,22 @@ const ACTIONS={
     if(e.help[me.id])delete e.help[me.id];else e.help[me.id]=true;
     save();render();
   },
-  evitemadd(el){
-    const me=curMember();if(!me){toast('Zaloguj się swoim PIN-em, aby dodać zgłoszenie.');return;}
-    const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
-    const d=(ui.evItemDrafts||{})[id]||{};
-    const clsV=String(d.cls||'').trim(),textV=String(d.text||'').trim(),qtyV=String(d.qty||'').trim();
-    if(!clsV||!textV){toast('Wpisz klasę i co przynosicie.');return;}
-    e.items=e.items||[];
-    e.items.push({id:uid(),cls:clsV,text:textV,qty:qtyV,author:me.name,memberId:me.id});
-    ui.evItemDrafts[id]={cls:'',text:'',qty:''};
-    save();render();toast('Dodano zgłoszenie.');
-  },
-  evitemdel(el){
-    const id=el.dataset.id,itemId=el.dataset.item,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
-    const me=curMember(),it=(e.items||[]).find(x=>x.id===itemId);if(!it)return;
-    if(!(canPlan()||(me&&it.memberId===me.id)))return;
-    e.items=(e.items||[]).filter(x=>x.id!==itemId);
-    save();render();toast('Usunięto zgłoszenie.');
-  },
   evitemxls(el){
     const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
-    const items=e.items||[];if(!items.length){toast('Brak zgłoszeń do pobrania.');return;}
-    const rows=[['Klasa','Co przynosi','Ilość']].concat(items.map(it=>[it.cls||'',it.text||'',it.qty||'']));
+    const rows0=evContribRows(e).filter(r=>String(r.v.babeczki||'').trim()||String(r.v.ciasto||'').trim()||String(r.v.inne||'').trim());
+    if(!rows0.length){toast('Brak zgłoszeń do pobrania.');return;}
+    const rows=[['Klasa','Babeczki','Ciasta','Inne']].concat(rows0.map(r=>[r.cls,r.v.babeczki||'',r.v.ciasto||'',r.v.inne||'']));
     const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
     const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
     saveFile(blob,asciiName('Zgloszenia_'+e.title+'_'+e.date)+'.csv');
   },
   evitemdoc(el){
     const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
-    const items=e.items||[];if(!items.length){toast('Brak zgłoszeń do pobrania.');return;}
+    const rows0=evContribRows(e).filter(r=>String(r.v.babeczki||'').trim()||String(r.v.ciasto||'').trim()||String(r.v.inne||'').trim());
+    if(!rows0.length){toast('Brak zgłoszeń do pobrania.');return;}
     const model=[{k:'header',text:db.settings.school},{k:'title',text:'Lista zgłoszeń – '+e.title},
       {k:'p',text:'Termin: '+fmtDate(e.date)+(e.place?', miejsce: '+e.place:'')},
-      {k:'table',widths:[20,50,30],head:['Klasa','Co przynosi','Ilość'],rows:items.map(it=>[it.cls||'',it.text||'',it.qty||'']),aligns:['left','left','center']}];
+      {k:'table',widths:[25,25,25,25],head:['Klasa','Babeczki','Ciasta','Inne'],rows:rows0.map(r=>[r.cls,r.v.babeczki||'',r.v.ciasto||'',r.v.inne||'']),aligns:['left','center','center','left']}];
     saveDocx(model,'Lista zgłoszeń',asciiName('Zgloszenia_'+e.title+'_'+e.date)+'.docx');
   },
   duesaddrow(){
@@ -2181,7 +2183,7 @@ const ACTIONS={
   }
 };
 const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
-const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','evitemadd','evitemdel','evitemxls','evitemdoc','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
+const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','evitemxls','evitemdoc','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
   const act=el.dataset.act;
