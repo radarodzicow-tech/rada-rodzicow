@@ -637,6 +637,7 @@ const asciiName=s=>String(s).replace(/ł/g,'l').replace(/Ł/g,'L').normalize('NF
 const FUNCS=['Przewodnicząca','Przewodniczący','Zastępca przewodniczącej','Zastępca przewodniczącego','Sekretarz','Skarbnik','Członek Prezydium','Przedstawiciel klasy','Komisja rewizyjna','Inna'];
 const PRES=FUNCS.slice(0,7);
 const byFunc=(a,b)=>(FUNCS.indexOf(a.func)-FUNCS.indexOf(b.func))||a.name.localeCompare(b.name,'pl');
+const byCls=(a,b)=>{const ca=String(a.cls||'').trim(),cb=String(b.cls||'').trim();if(!ca&&cb)return 1;if(ca&&!cb)return -1;return ca.localeCompare(cb,'pl')||a.name.localeCompare(b.name,'pl');};
 
 function defaults(){
   const s=syStart(todayISO());
@@ -795,7 +796,8 @@ function attBlocks(m){
   const t=mtype(m),S=attStats(m);
   const B=[{k:'header',text:db.settings.school},{k:'title',text:'Lista obecności'},{k:'title',size:26,text:cap(t.nom)+' z dnia '+fmtDate(m.date)}];
   if(m.place||m.time)B.push({k:'p',align:'center',text:[m.place,m.time?'godz. '+m.time:''].filter(Boolean).join(', ')});
-  const rows=S.all.map((x,i)=>[String(i+1),x.name,x.cls||'','']);
+  const sorted=[...S.all].sort(byCls);
+  const rows=sorted.map((x,i)=>[String(i+1),x.name,x.cls||'','']);
   for(let i=0;i<4;i++)rows.push([String(S.all.length+i+1),'','','']);
   B.push({k:'table',widths:[7,38,20,35],head:['Lp.','Imię i nazwisko','Klasa','Podpis'],rows:rows,aligns:['center','left','center','left'],rowH:560});
   return B;
@@ -1556,7 +1558,7 @@ function listHtml(){
     h+=statystykiHtml();
   }else if(ui.tab==='czlonkowie'){
     h+=head('Członkowie','Lista do obecności, podpisów i dostępów',isAdmin()?'<button class="btn primary" data-act="addmember">Dodaj osobę</button>':'');
-    const ms=[...db.members].sort(byFunc);
+    const ms=[...db.members].sort(byCls);
     if(!ms.length)h+=emptyBox('Lista jest pusta',isAdmin()?'Dodaj członków rady, żeby zaznaczać obecność.':'Nikogo tu jeszcze nie dodano.','');
     else if(isAdmin())h+='<div class="card">'+ms.map(memberRowAdmin).join('')+'</div><p class="hint">Osoby z funkcją Przewodniczącej/Przewodniczącego i Zastępcy mają zawsze dostęp do edycji dokumentów. Adres e-mail pozwala danej osobie się zalogować (przy pierwszym wejściu zakłada konto tym adresem) (głosowanie, notatki, a po zaznaczeniu „dostęp do edycji” – także dokumenty). Przycisk „Ustaw jako administratora” przekazuje Twoje uprawnienia administratora tej osobie.</p>';
     else h+='<div class="card">'+ms.map(memberRowReadOnly).join('')+'</div>';
@@ -1576,7 +1578,7 @@ function memberRowAdmin(m){
     '</div></div>';
 }
 function memberRowReadOnly(m){
-  return '<div class="member"><div class="rb"><span class="rt">'+esc(m.name||'(bez nazwiska)')+'</span><span class="rs">'+esc([m.func,m.cls].filter(Boolean).join(', '))+'</span></div></div>';
+  return '<div class="member"><div class="rb"><span class="rt">'+esc(m.name||'')+'</span><span class="rs">'+esc([m.func,m.cls].filter(Boolean).join(', '))+'</span></div></div>';
 }
 function notatnikHtml(){
   let h=head('Notatnik','Sugestie i informacje dla osób prowadzących dokumenty','');
