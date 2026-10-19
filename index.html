@@ -243,16 +243,16 @@ input:disabled{opacity:.55}
 .sh-table th,.sh-table td{border:1px solid #aaa;padding:4px 6px}
 .sh-table th{background:#ededed}
 .evtablewrap{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin:10px 0 4px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow)}
-.ev-table{width:100%;min-width:300px;table-layout:fixed;border-collapse:collapse;font-size:13.5px;background:var(--surface)}
-.ev-table th{background:var(--rose-tint1);color:var(--rose-d);font-weight:700;text-align:left;padding:10px 10px;font-size:12.5px;overflow-wrap:break-word;border-bottom:1px solid var(--line)}
-.ev-table td{padding:10px;vertical-align:middle;overflow-wrap:break-word;border-bottom:1px solid var(--line)}
+.ev-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;background:var(--surface)}
+.ev-table th{background:var(--rose-tint1);color:var(--rose-d);font-weight:700;text-align:left;padding:8px 6px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--line)}
+.ev-table td{padding:6px;vertical-align:middle;overflow:hidden;border-bottom:1px solid var(--line)}
 .ev-table tr:last-child td{border-bottom:none}
 .ev-table td.num{text-align:center}
 .ev-table th.num{text-align:center}
 .ev-table tr.mine{background:var(--rose-tint2)}
-.ev-table td.empty{color:var(--muted)}
-.ev-table input{width:100%;min-height:38px;padding:6px 8px;font-size:13.5px;border-radius:11px;text-align:left;box-sizing:border-box}
-.ev-table input.num{text-align:center;padding:6px 4px}
+.ev-table td.empty{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-table input{width:100%;min-height:36px;padding:5px 6px;font-size:13px;border-radius:10px;text-align:left;box-sizing:border-box}
+.ev-table input.num{text-align:center;padding:5px 2px}
 .sh-sp{height:10px}
 .sh-pb{border:0;border-top:2px dashed #ccc;margin:26px -10px}
 .pnote{font-size:13px;color:var(--muted);text-align:center;margin:10px 0 0}
@@ -1242,7 +1242,7 @@ function evItemsBlock(e){
   if(!mine)h+='<p class="hint" style="margin:0 0 8px">Możesz uzupełnić wiersz swojej klasy; resztę widzisz do odczytu.</p>';
   if(!rows.length)h+='<p class="hint" style="margin:0">Dodaj najpierw członków z przypisaną klasą w zakładce Członkowie.</p>';
   else{
-    h+='<div class="evtablewrap"><table class="ev-table"><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:40%"></colgroup><thead><tr><th>Klasa</th><th class="num">Babeczki</th><th class="num">Ciasta</th><th>Inne</th></tr></thead><tbody>'+
+    h+='<div class="evtablewrap"><table class="ev-table"><colgroup><col style="width:14%"><col style="width:18%"><col style="width:18%"><col style="width:50%"></colgroup><thead><tr><th>Klasa</th><th class="num">Babeczki</th><th class="num">Ciasta</th><th>Inne</th></tr></thead><tbody>'+
       rows.map(r=>{
         const canEditRow=!ui.readOnly&&me&&(mine||String(me.cls||'').trim()===r.cls);
         const isMine=me&&String(me.cls||'').trim()===r.cls;
