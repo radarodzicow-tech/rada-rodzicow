@@ -1179,7 +1179,7 @@ function idBar(){
   return '<div class="card" style="margin-bottom:16px"><h3>Brak przypisania do członka Rady</h3><p class="hint">Jesteś zalogowana/y jako <b>'+esc(window.__authEmail||'')+'</b>, ale tego adresu nie ma na liście członków. Poproś administratora ('+esc(adminName())+'), aby wpisał ten adres przy Twoim nazwisku w zakładce Członkowie.</p><button class="btn small" data-act="logout">Wyloguj</button></div>';
 }
 function isRep(m){return !!m&&['Przedstawiciel klasy','Komisja rewizyjna','Inna'].includes(m.func);}
-const REP_TABS=['kalendarz','glosowanie','dokumenty','czlonkowie','notatnik'];
+const REP_TABS=['kalendarz','glosowanie','dokumenty','czlonkowie','notatnik','statystyki'];
 function tabAllowed(t){return !isRep(curMember())||REP_TABS.indexOf(t)>=0;}
 function defaultTab(){return isRep(curMember())?REP_TABS[0]:'pulpit';}
 function canPlan(){const m=curMember();if(ui.readOnly||!m)return false;return isAdmin()||isChairRole(m)||m.func==='Sekretarz';}
