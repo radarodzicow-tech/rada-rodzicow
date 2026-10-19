@@ -1220,7 +1220,7 @@ function evDlHtml(e){
 function evItemsBlock(e){
   const me=curMember(),missing=evMissingClasses(e),rows=evContribRows(e),mine=canPlan();
   let h='<div class="card" style="margin-top:10px"><h3 style="margin:0 0 6px;display:flex;align-items:center;gap:8px">Lista zgłoszeń – kto co przynosi'+
-    (missing.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'')+'</h3>';
+    '<span id="evheadwarn-'+e.id+'">'+(missing.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'')+'</span></h3>';
   h+=evMissingHtml(e.id,missing);
   if(!mine)h+='<p class="hint" style="margin:0 0 8px">Możesz uzupełnić wiersz swojej klasy; resztę widzisz do odczytu.</p>';
   if(!rows.length)h+='<p class="hint" style="margin:0">Dodaj najpierw członków z przypisaną klasą w zakładce Członkowie.</p>';
@@ -1249,11 +1249,14 @@ function evHelpBlock(e){
     '</div>'+
     '<p class="hint" style="margin:6px 0 0">'+(names.length?'Pomoc zgłosili: '+names.map(x=>esc(x)).join(', ')+'.':(me?'Nikt jeszcze się nie zgłosił – bądź pierwszy/a.':'Nikt jeszcze się nie zgłosił.'))+'</p>';
 }
-function evRow(i,withActs){
+function evRow(i,withActs,linked){
   const p=i.date.split('-'),cls=i.kind==='mt'?' mt':i.kind==='fr'?' fr':'';
   const meta=[i.end!==i.date?'do '+fmtDate(i.end):'',i.time,i.place].filter(Boolean).join(' · ');
-  const missingDot=i.kind==='ev'&&i.src&&i.src.type==='impreza'&&evMissingClasses(i.src).length?' <span class="vwarn" style="font-size:11px" title="Nie wszystkie klasy się zgłosiły"><i style="width:16px;height:16px;font-size:11px">!</i></span>':'';
-  let h='<div class="evrow"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+missingDot+'</div>'+
+  const isImpreza=i.kind==='ev'&&i.src&&i.src.type==='impreza';
+  const missingDot=isImpreza?'<span id="evtitlewarn-'+i.src.id+'">'+(evMissingClasses(i.src).length?' <span class="vwarn" style="font-size:11px" title="Nie wszystkie klasy się zgłosiły"><i style="width:16px;height:16px;font-size:11px">!</i></span>':'')+'</span>':'';
+  const jump=linked&&i.kind==='ev'?'<button class="btn small ghost" data-act="goevent" data-id="'+i.id+'" aria-label="Przejdź do wydarzenia" title="Przejdź do wydarzenia" style="flex:none;padding:6px 10px">→</button>':
+    linked&&i.kind==='mt'?'<button class="btn small ghost" data-act="open" data-kind="meeting" data-id="'+i.id+'" aria-label="Otwórz zebranie" title="Otwórz zebranie" style="flex:none;padding:6px 10px">→</button>':'';
+  let h='<div class="evrow" style="'+(jump?'align-items:center':'')+'"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+missingDot+'</div>'+
     '<div class="m">'+(i.kind==='mt'?'Zebranie':i.kind==='fr'?'Dzień wolny od zajęć':'Wydarzenie')+(meta?' · '+esc(meta):'')+'</div>'+(i.desc?'<div class="d">'+esc(i.desc)+'</div>':'');
   if(withActs&&i.meeting&&!isRep(curMember()))h+='<p style="margin:6px 0 0"><button class="btn small" data-act="open" data-kind="meeting" data-id="'+i.id+'">Otwórz zebranie</button></p>';
   if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza'){h+=evHelpBlock(i.src);h+=evItemsBlock(i.src);}
@@ -1261,7 +1264,7 @@ function evRow(i,withActs){
     h+='<div class="moreacts" style="margin-top:6px"><button class="btn small" data-act="evedit" data-id="'+i.id+'">Zmień</button>'+
       (ui.confirm==='e'+i.id?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn small warn" data-act="evdel" data-id="'+i.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':'<button class="btn small ghost" data-act="evdel" data-id="'+i.id+'">Usuń</button>')+'</div>';
   }
-  return h+'</div></div>';
+  return h+'</div>'+jump+'</div>';
 }
 function evForm(){
   const d=ui.evDraft,r='data-root="evdraft"';
@@ -1316,16 +1319,10 @@ function annHtml(){
   }
   return h;
 }
-function evSignupCard(){
-  const today=todayISO();
-  const ev=(db.events||[]).filter(e=>e.type==='impreza'&&e.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0];
-  if(!ev)return '';
-  return '<div class="card k-cal"><h3 style="margin:0 0 8px">Zgłoszenia na wydarzenie</h3><p class="hint" style="margin:0 0 10px">'+esc(ev.title)+' · '+fmtDate(ev.date)+'</p><button class="btn primary" data-act="goevent" data-id="'+ev.id+'">Przejdź do zgłoszeń</button></div>';
-}
 function upcomingCard(){
   const today=todayISO(),up=calItems().filter(i=>i.end>=today).slice(0,3);
   if(!up.length)return '';
-  return '<div class="card k-cal"><div class="nhead" style="margin-bottom:4px"><h3 style="margin:0">Najbliższe wydarzenia</h3><button class="btn small" data-act="tab" data-v="kalendarz">Kalendarz</button></div>'+up.map(i=>evRow(i,false)).join('')+'</div>';
+  return '<div class="card k-cal"><div class="nhead" style="margin-bottom:4px"><h3 style="margin:0">Najbliższe wydarzenia</h3><button class="btn small" data-act="tab" data-v="kalendarz">Kalendarz</button></div>'+up.map(i=>evRow(i,false,true)).join('')+'</div>';
 }
 function mailCfg(){const m=(db.settings&&db.settings.mail)||{};return (m.service&&m.template&&m.key)?m:null;}
 function appLink(){return location.origin+location.pathname;}
@@ -1465,7 +1462,7 @@ function repCard(r){
 }
 function statBox(n,l){return '<div class="stat"><b>'+esc(n)+'</b><span>'+esc(l)+'</span></div>';}
 function pulpitHtml(){
-  if(isRep(curMember())){let r=head('Pulpit','Witaj, '+esc(curMember().name)+'! Najważniejsze informacje Rady Rodziców','');r+=annHtml()+upcomingCard()+evSignupCard();const op=openPolls().filter(x=>canVote(curMember(),x));r+=op.length?'<div class="card"><h3>Trwające głosowania</h3><p class="hint" style="margin:0 0 8px">Głosowań, w których bierzesz udział: '+op.length+'.</p><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>':'';if(r.indexOf('class="card')<0)r+=emptyBox('Na razie nic nowego','Tu pojawią się ogłoszenia Prezydium i najbliższe wydarzenia.','');return r;}
+  if(isRep(curMember())){let r=head('Pulpit','Witaj, '+esc(curMember().name)+'! Najważniejsze informacje Rady Rodziców','');r+=annHtml()+upcomingCard();const op=openPolls().filter(x=>canVote(curMember(),x));r+=op.length?'<div class="card"><h3>Trwające głosowania</h3><p class="hint" style="margin:0 0 8px">Głosowań, w których bierzesz udział: '+op.length+'.</p><button class="btn small" data-act="tab" data-v="glosowanie">Przejdź do głosowania</button></div>':'';if(r.indexOf('class="card')<0)r+=emptyBox('Na razie nic nowego','Tu pojawią się ogłoszenia Prezydium i najbliższe wydarzenia.','');return r;}
   const ms=db.meetings.filter(m=>inSY(m.date,viewYear)),rs=db.resolutions.filter(r=>inSY(r.date,viewYear)||(blank(r.year)&&false)),
     rp=db.reports.filter(r=>r.sy&&syFromLabel(r.sy)===viewYear);
   const rsAll=db.resolutions.filter(r=>ui.allYears?true:num(r.year)===viewYear);
@@ -1476,7 +1473,7 @@ function pulpitHtml(){
   const lastRes=[...rsAll].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,3);
   let h=yearBar();
   h+=head('Pulpit','Rok szkolny '+esc(syLabel(viewYear))+' (wrzesień–czerwiec) – wszystko w jednym miejscu','');
-  h+=annHtml()+upcomingCard()+evSignupCard();
+  h+=annHtml()+upcomingCard();
   h+='<div class="stats">'+statBox(ms.length,'zebrań')+statBox(rs.length,'uchwał')+statBox(money(kw)+' zł','wydatków poza preliminarzem')+statBox(rp.length,'sprawozdań')+'</div>';
   if(!locked()){
     h+='<div class="card"><h3>Szybkie dodawanie</h3><div class="moreacts">'+
@@ -1883,10 +1880,15 @@ function onBind(t){
     const rest=rk.slice(10),i2=rest.indexOf(':'),eid=rest.slice(0,i2);
     const ev=(db.events||[]).find(x=>x.id===eid);
     if(ev){
+      const m=evMissingClasses(ev);
       const miss=document.getElementById('evmissing-'+eid);
-      if(miss){const m=evMissingClasses(ev);miss.outerHTML=evMissingHtml(eid,m);}
+      if(miss)miss.outerHTML=evMissingHtml(eid,m);
       const dl=document.getElementById('evdl-'+eid);
       if(dl)dl.outerHTML=evDlHtml(ev);
+      const hw=document.getElementById('evheadwarn-'+eid);
+      if(hw)hw.innerHTML=m.length?'<span class="vwarn" style="font-size:12px"><i style="width:18px;height:18px;font-size:12px">!</i></span>':'';
+      const tw=document.getElementById('evtitlewarn-'+eid);
+      if(tw)tw.innerHTML=m.length?' <span class="vwarn" style="font-size:11px" title="Nie wszystkie klasy się zgłosiły"><i style="width:16px;height:16px;font-size:11px">!</i></span>':'';
     }
     save();return;
   }
