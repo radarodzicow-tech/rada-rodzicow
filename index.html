@@ -400,7 +400,8 @@ input:disabled{opacity:.55}
      votes/* (każdy swój głos), notes/* (notatki) ===== */
   var REP='Przedstawiciel klasy';
   var lastAccess='',wasAdmin=false;
-  ready.then(function(){return fs.doc('config/access').get();}).then(function(x){var d=x&&x.exists?x.data():null;if(d&&window.__authEmail&&(d.admins||[]).indexOf(window.__authEmail)>=0)wasAdmin=true;}).catch(function(){});
+  ready.then(function(){return fs.doc('config/access').get();}).then(function(x){var d=x&&x.exists?x.data():null;if(d&&window.__authEmail&&(d.admins||[]).indexOf(window.__authEmail)>=0)wasAdmin=true;try{if(typeof render==='function')render(false);}catch(e){}}).catch(function(){});
+  window.__wasAdmin=function(){return wasAdmin;};
   function low(x){return String(x||'').trim().toLowerCase();}
   function syncAccess(obj){
     try{
@@ -1184,7 +1185,8 @@ function bulkCard(){
 function topHtml(){
   const me=curMember();
   let idrow='';
-  if(me)idrow='<div class="idrow"><span class="idpill">'+(isAdmin()?'Administrator: ':'Zalogowano: ')+esc(me.name)+(ui.readOnly?' (podgląd)':'')+'</span><button class="btn small" data-act="logout">Wyloguj</button></div>';
+  const canReclaim=me&&!isAdmin()&&typeof window.__wasAdmin==='function'&&window.__wasAdmin();
+  if(me)idrow='<div class="idrow"><span class="idpill">'+(isAdmin()?'Administrator: ':'Zalogowano: ')+esc(me.name)+(ui.readOnly?' (podgląd)':'')+'</span>'+(canReclaim?'<button class="btn small warn" data-act="reclaimadmin">Odzyskaj uprawnienia administratora</button>':'')+'<button class="btn small" data-act="logout">Wyloguj</button></div>';
   else idrow='<div class="idrow"><span class="idpill ghost">'+(ui.readOnly?'Podgląd – niezalogowano':'Niezalogowano')+'</span></div>';
   return (storageOk||ui.readOnly?'':'<div class="banner">Ta przeglądarka nie zapisuje danych na stałe. Po zamknięciu strony dane mogą zniknąć – pobierz kopię zapasową w Ustawieniach.</div>')+
   idrow+
@@ -2062,6 +2064,11 @@ const ACTIONS={
     if(!isAdmin())return;
     db.settings.adminId=el.dataset.id;save();render();toast('Administrator zmieniony.');
   },
+  reclaimadmin(){
+    if(typeof window.__wasAdmin!=='function'||!window.__wasAdmin())return;
+    const m=curMember();if(!m)return;
+    db.settings.adminId=m.id;save();render();toast('Przywrócono Twoje uprawnienia administratora.');
+  },
   del(){
     if(ui.confirm!=='rec'){ui.confirm='rec';render();return;}
     const e=ui.editing,c=coll(e.kind),i=c.findIndex(x=>x.id===e.id);if(i>=0)c.splice(i,1);
@@ -2217,7 +2224,7 @@ const ACTIONS={
     save();ui.bulk=null;render();toast('Dodano uchwał: '+it.length+'. Sprawdź daty i nazwy.');
   }
 };
-const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','goevent','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin']);
+const VIEW_SAFE=new Set(['calprev','calnext','calday','tab','goevent','open','back','seg','dl','dlatt','dlall','yprev','ynext','yall','login','logout','claimadmin','reclaimadmin']);
 const LOCKED_SAFE=new Set(['mailtest','evnew','evedit','evcancel','evsave','evdel','evhelp','evitemxls','evitemdoc','annnew','anncancel','annsave','anndel','addnote','notedone','delnote','delnotecancel','votecast']);
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
