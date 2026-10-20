@@ -430,13 +430,13 @@ input:disabled{opacity:.55}
     d=J(d)||{};
     (d.resolutions||[]).forEach(function(r){if(!r.poll)delete r.poll;});
     d.notes=(d.notes||[]).map(function(n){delete n.email;return n;}).sort(function(a,b){return String(a.id).localeCompare(String(b.id));});
-    ['flags','settings','members','events','ann','docs','meetings','resolutions','reports'].forEach(function(k){if(d[k]==null)d[k]=(k==='flags'||k==='settings')?{}:[];});
+    ['flags','settings','members','events','ann','docs','meetings','resolutions','reports','duesStats','log'].forEach(function(k){if(d[k]==null)d[k]=(k==='flags'||k==='settings')?{}:[];});
     return JSON.stringify(sortDeep(d));
   }
   function META(r){return {body:r.body||'',mode:r.mode||'',cel:r.cel||'',kwota:r.kwota||'',subject:r.subject||'',date:r.date||'',status:r.status||'',num:r.num==null?'':r.num,year:r.year==null?'':r.year};}
   function merge(){
     var pub=C.pub||{},prv=C.priv||{},polls=pub.polls||{};
-    var d={v:1,flags:prv.flags||{},settings:J(pub.settings)||{},members:J(pub.members)||[],events:J(pub.events)||[],ann:J(pub.ann)||[],docs:J(pub.docs)||[],duesStats:J(pub.duesStats)||[],
+    var d={v:1,flags:prv.flags||{},settings:J(pub.settings)||{},members:J(pub.members)||[],events:J(pub.events)||[],ann:J(pub.ann)||[],docs:J(pub.docs)||[],duesStats:J(pub.duesStats)||[],log:J(prv.log)||[],
       meetings:J(prv.meetings)||[],resolutions:[],reports:J(prv.reports)||[],notes:[]};
     if(isPriv){
       d.resolutions=(J(prv.resolutions)||[]).map(function(r){var p=polls[r.id];if(p)r.poll={open:!!p.open,votes:{}};return r;});
@@ -472,7 +472,7 @@ input:disabled{opacity:.55}
       var polls={};
       (obj.resolutions||[]).forEach(function(r){if(r.poll)polls[r.id]={open:!!r.poll.open,meta:META(r)};});
       var pub={settings:obj.settings||{},members:obj.members||[],events:obj.events||[],ann:obj.ann||[],docs:obj.docs||[],duesStats:obj.duesStats||[],polls:polls};
-      var prv={flags:obj.flags||{},meetings:obj.meetings||[],reports:obj.reports||[],
+      var prv={flags:obj.flags||{},meetings:obj.meetings||[],reports:obj.reports||[],log:obj.log||[],
         resolutions:(obj.resolutions||[]).map(function(r){var c=J(r);delete c.poll;return c;})};
       if(JSON.stringify(pub)!==JSON.stringify(C.pub)){C.pub=J(pub);ps.push(putDoc('app/pub',pub));}
       if(JSON.stringify(prv)!==JSON.stringify(C.priv)){C.priv=J(prv);ps.push(putDoc('app/priv',prv));}
@@ -663,7 +663,7 @@ function defaults(){
       {id:uid(),name:'Agnieszka Lustyk',func:'Zastępca przewodniczącej',cls:'',g:'f',pin:'',canEdit:true},
       {id:uid(),name:'Anna Dwojak',func:'Sekretarz',cls:'',g:'f',pin:'',canEdit:true}
     ],
-    meetings:[],resolutions:[],reports:[],notes:[],docs:[],events:[],ann:[],duesStats:[]};
+    meetings:[],resolutions:[],reports:[],notes:[],docs:[],events:[],ann:[],duesStats:[],log:[]};
 }
 
 /* ---------- ludzie i podpisy ---------- */
@@ -996,7 +996,7 @@ function normalize(d){
   const b=defaults();
   if(!d||typeof d!=='object')return b;
   d=deepClone(d);
-  return {v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:(d.members||[]).map(m=>Object.assign({pin:'',canEdit:true},m)),meetings:d.meetings||[],resolutions:fixResYears((d.resolutions||[]).map(r=>Object.assign({status:'przyjeta',attachments:[]},r))),reports:d.reports||[],notes:d.notes||[],docs:d.docs||[],events:d.events||[],ann:d.ann||[]};
+  return {v:1,flags:d.flags||{},settings:Object.assign(b.settings,d.settings||{}),members:(d.members||[]).map(m=>Object.assign({pin:'',canEdit:true},m)),meetings:d.meetings||[],resolutions:fixResYears((d.resolutions||[]).map(r=>Object.assign({status:'przyjeta',attachments:[]},r))),reports:d.reports||[],notes:d.notes||[],docs:d.docs||[],events:d.events||[],ann:d.ann||[],duesStats:d.duesStats||[],log:d.log||[]};
 }
 function load(){
   try{const s=storageOk?localStorage.getItem(KEY):null;if(s)return normalize(JSON.parse(s));}catch(e){}
@@ -1049,7 +1049,9 @@ async function boot(){
   }
   ui.readOnly=!canWrite;
   ui.noteDraft.author=loadAuthorPref();
-  ui.voterId='';{const em=window.__authEmail;const mm=em?db.members.find(x=>String(x.email||'').trim().toLowerCase()===em):null;if(mm)ui.voterId=mm.id;}
+  ui.voterId='';{const em=window.__authEmail;const mm=em?db.members.find(x=>String(x.email||'').trim().toLowerCase()===em):null;if(mm)ui.voterId=mm.id;
+    if(em&&canWrite){try{if(!sessionStorage.getItem('rrLogin')){sessionStorage.setItem('rrLogin','1');logAction('Zalogowano (e-mail)'+(mm?': '+mm.name:''));save();}}catch(e){}}
+  }
   if(!ui.loadFailed&&!db.settings.adminId&&db.members.length){
     const sec=db.members.find(m=>/^Sekretarz/.test(m.func||''))||db.members[0];
     db.settings.adminId=sec.id;
@@ -1065,6 +1067,15 @@ function canEditDocs(){if(ui.readOnly)return false;const m=curMember();return !!
 function locked(kind){if(ui.readOnly)return true;const k=kind||(ui.editing&&ui.editing.kind);if(k==='meeting'||k==='resolution')return !canPlan();return !canEditDocs();}
 function adminName(){const m=db.members.find(x=>x.id===db.settings.adminId);return m?m.name:'brak';}
 function adminNeedsSetup(){const m=db.members.find(x=>x.id===db.settings.adminId);return !!(m&&!m.pin&&!String(m.email||'').trim());}
+function logAction(action){
+  try{
+    const me=curMember();
+    const who=me?me.name||'(bez nazwiska)':(window.__authEmail||'Nieznany');
+    db.log=db.log||[];
+    db.log.unshift({id:uid(),ts:new Date().toISOString(),who:who,action:action});
+    if(db.log.length>300)db.log.length=300;
+  }catch(e){}
+}
 
 const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
 const $app=document.getElementById('app');
@@ -1664,6 +1675,22 @@ function noteCard(n){
       '</div>')+
     '</div>';
 }
+function fmtLogTs(iso){
+  try{
+    const d=new Date(iso);
+    if(isNaN(d.getTime()))return iso;
+    const p=n=>String(n).padStart(2,'0');
+    return p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
+  }catch(e){return iso;}
+}
+function logHtml(){
+  const log=db.log||[];
+  let h='<div class="card"><h3>Historia działań</h3>';
+  if(!log.length){h+='<p class="hint" style="margin:0">Brak zapisanych działań.</p></div>';return h;}
+  h+='<p class="hint">Ostatnie działania w aplikacji – widoczne tylko dla administratora.</p>';
+  h+='<div class="list">'+log.slice(0,100).map(l=>'<div class="rlink"><span><b>'+esc(fmtLogTs(l.ts))+'</b> – '+esc(l.who)+': '+esc(l.action)+'</span></div>').join('')+'</div></div>';
+  return h;
+}
 function settingsHtml(){
   const s=db.settings,r='data-root="settings"';
   let h=head('Ustawienia','Dane szkoły i kopia zapasowa','');
@@ -1677,6 +1704,7 @@ function settingsHtml(){
     inp(s,'Service ID','mail.service',{ph:'np. service_ab12cd3'})+inp(s,'Template ID','mail.template',{ph:'np. template_x9y8z7'})+inp(s,'Public Key','mail.key',{ph:'np. AbCdEf123456'})+
     '<div class="moreacts"><button class="btn" data-act="mailtest">Wyślij test na mój e-mail</button></div>'+(mailCfg()?'<p class="hint" style="margin:8px 0 0">✓ Powiadomienia włączone. Osób z zapisanym e-mailem: '+db.members.filter(m=>m.email).length+' z '+db.members.length+'.</p>':'')+'</div>';
   h+='<div class="card"><h3>Administrator</h3><p class="hint">Obecny administrator: <b>'+esc(adminName())+'</b>. Administrator może zmieniać skład Prezydium, dostęp do edycji dokumentów poszczególnych osób i przekazywać uprawnienia administratora dalej – zrobisz to w zakładce Członkowie.</p></div>';
+  if(isAdmin())h+=logHtml();
   h+='<div class="card"><h3>Kopia zapasowa</h3><p class="hint">Dane są zapisane w bazie online i wszyscy widzą te same dokumenty. Raz na jakiś czas pobierz kopię na komputer – na wszelki wypadek.</p><div class="moreacts"><button class="btn primary" data-act="backup">Pobierz kopię (plik)</button><button class="btn" data-act="importpick">Wczytaj kopię z pliku</button></div>';
   if(ui.pendingImport){const p=ui.pendingImport;h+='<p class="hint" style="margin-top:14px">W pliku: zebrań '+p.meetings.length+', uchwał '+p.resolutions.length+', sprawozdań '+p.reports.length+', osób '+p.members.length+'. Wczytanie zastąpi wszystkie obecne dane w aplikacji.</p><div class="moreacts"><button class="btn warn" data-act="importok">Wczytaj i zastąp</button><button class="btn" data-act="importcancel">Anuluj</button></div>';}
   h+='</div></div>';
@@ -1985,7 +2013,7 @@ const ACTIONS={
   goevent(el){const id=el.dataset.id,ev=(db.events||[]).find(x=>x.id===id);if(!ev)return;ui.tab='kalendarz';ui.calM=ev.date.slice(0,7);ui.calDay=ev.date;ui.editing=null;ui.confirm=null;ui.sel=null;render(false);window.scrollTo(0,0);},
   open(el){if(isRep(curMember())&&el.dataset.kind!=='doc'){toast('Ten dokument jest dostępny tylko dla Prezydium.');return;}ui.editing={kind:el.dataset.kind,id:el.dataset.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   back(){ui.editing=null;ui.confirm=null;render(false);window.scrollTo(0,0);},
-  new(el){if(locked(el.dataset.kind))return;const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
+  new(el){if(locked(el.dataset.kind))return;const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;logAction('Utworzono: '+recTitle(el.dataset.kind,r));render(false);window.scrollTo(0,0);},
   seg(el){ui.editTab=el.dataset.v;render(false);window.scrollTo(0,0);},
   yprev(){ui.allYears=false;viewYear--;saveViewYear();render();},
   ynext(){ui.allYears=false;viewYear++;saveViewYear();render();},
@@ -2017,9 +2045,9 @@ const ACTIONS={
   },
   dup(){
     const r=getRec();if(!r)return;const c=JSON.parse(JSON.stringify(r));c.id=uid();c.date=todayISO();c.year=syStart(c.date);c.status='wniosek';c.num='';c.yearT=false;c.numT=false;c.poll=null;c.za='';c.przeciw='';c.wstrz='';
-    db.resolutions.push(c);save();ui.editing={kind:'resolution',id:c.id};ui.confirm=null;render(false);window.scrollTo(0,0);toast('Utworzono kopię jako nowy wniosek – przeprowadź nad nim głosowanie.');
+    db.resolutions.push(c);logAction('Zduplikowano uchwałę/wniosek: '+recTitle('resolution',r));save();ui.editing={kind:'resolution',id:c.id};ui.confirm=null;render(false);window.scrollTo(0,0);toast('Utworzono kopię jako nowy wniosek – przeprowadź nad nim głosowanie.');
   },
-  pollopen(){const r=getRec();if(!r)return;const was=r.poll&&r.poll.open;r.poll={open:true,votes:(r.poll&&r.poll.votes)||{}};save();render();if(!was)notifyVote(r,false);},
+  pollopen(){const r=getRec();if(!r)return;const was=r.poll&&r.poll.open;r.poll={open:true,votes:(r.poll&&r.poll.votes)||{}};if(!was)logAction('Rozpoczęto głosowanie: '+voteTitle(r));save();render();if(!was)notifyVote(r,false);},
   pollremind(el){const r=db.resolutions.find(x=>x.id===el.dataset.id);if(r&&r.poll&&r.poll.open)notifyVote(r,true);},
   mailtest(){const me=curMember();if(!me||!me.email){toast('Wpisz najpierw swój e-mail w zakładce Członkowie.');return;}sendMail([me.email],'Test powiadomień – Rada Rodziców','To jest wiadomość testowa. Jeśli ją widzisz, powiadomienia działają.').then(r=>toast(r.ok?'Wysłano test na '+me.email:r.why==='nocfg'?'Uzupełnij wszystkie trzy pola.':'Błąd: '+r.why));},
   pollclose(){const r=getRec();if(!r||!r.poll)return;r.poll.open=false;save();render();},
@@ -2027,6 +2055,7 @@ const ACTIONS={
     const r=getRec();if(!r)return;const t=pollTally(r);
     r.za=String(t.za);r.przeciw=String(t.przeciw);r.wstrz=String(t.wstrz);r.manual=false;if(r.poll)r.poll.open=false;
     const st=decideResolution(r);
+    logAction((st==='przyjeta'?'Przyjęto uchwałę (głosowanie): ':'Odrzucono wniosek (głosowanie): ')+voteTitle(r));
     save();render();refreshPreview();updateLive();
     toast(st==='przyjeta'?'Głosowanie zakończone – uchwała przyjęta, nadano numer '+r.num+'/'+r.year+'.':'Głosowanie zakończone – wniosek odrzucony, uchwała nie powstała.');
   },
@@ -2034,11 +2063,13 @@ const ACTIONS={
     const r=getRec();if(!r)return;
     if(voteInfo(r).cls==='wait'){toast('Najpierw uzupełnij liczbę głosów (za, przeciw, wstrzymało się).');return;}
     const st=decideResolution(r);
+    logAction((st==='przyjeta'?'Przyjęto uchwałę: ':'Odrzucono wniosek: ')+voteTitle(r));
     save();render();refreshPreview();updateLive();
     toast(st==='przyjeta'?'Uchwała przyjęta, nadano numer '+r.num+'/'+r.year+'.':'Wniosek odrzucony – uchwała nie powstała.');
   },
   reopen(){
     const r=getRec();if(!r)return;r.status='wniosek';r.za='';r.przeciw='';r.wstrz='';r.num='';r.numT=false;
+    logAction('Otwarto ponownie do głosowania: '+voteTitle(r));
     save();render();refreshPreview();updateLive();toast('Wniosek otwarty ponownie do głosowania.');
   },
   votecast(el){
@@ -2054,43 +2085,47 @@ const ACTIONS={
     if(!pin){toast('Wpisz swój PIN.');return;}
     const m=db.members.find(x=>x.pin&&String(x.pin)===pin);
     if(!m){toast('Nieprawidłowy PIN.');return;}
-    ui.voterId=m.id;saveVoterId(m.id);ui.voterPinInput='';render();toast('Zalogowano jako '+m.name+'.');
+    ui.voterId=m.id;saveVoterId(m.id);ui.voterPinInput='';logAction('Zalogowano (PIN).');save();render();toast('Zalogowano jako '+m.name+'.');
   },
   logout(){if(window.__fbSignOut)window.__fbSignOut();},
   claimadmin(){
     const cur=db.members.find(x=>x.id===db.settings.adminId);
     if(!cur||cur.pin||String(cur.email||'').trim()){toast('To już nie jest możliwe.');return;}
     const m=curMember();
-    if(m){db.settings.adminId=m.id;save();render();toast('Przejęto rolę administratora.');return;}
+    if(m){db.settings.adminId=m.id;logAction('Przejęto rolę administratora (konto nieustawione).');save();render();toast('Przejęto rolę administratora.');return;}
     ui.voterId=cur.id;saveVoterId(cur.id);render();toast('Zalogowano jako '+cur.name+'. Ustaw swój PIN w zakładce Członkowie.');
   },
   setadmin(el){
     if(!isAdmin())return;
-    db.settings.adminId=el.dataset.id;save();render();toast('Administrator zmieniony.');
+    const m=db.members.find(x=>x.id===el.dataset.id);
+    db.settings.adminId=el.dataset.id;logAction('Zmieniono administratora na: '+(m?m.name||'(bez nazwiska)':'?'));save();render();toast('Administrator zmieniony.');
   },
   reclaimadmin(){
     if(typeof window.__wasAdmin!=='function'||!window.__wasAdmin())return;
     const m=curMember();if(!m)return;
-    db.settings.adminId=m.id;save();render();toast('Przywrócono Twoje uprawnienia administratora.');
+    db.settings.adminId=m.id;logAction('Odzyskano uprawnienia administratora.');save();render();toast('Przywrócono Twoje uprawnienia administratora.');
   },
   del(){
     if(ui.confirm!=='rec'){ui.confirm='rec';render();return;}
-    const e=ui.editing,c=coll(e.kind),i=c.findIndex(x=>x.id===e.id);if(i>=0)c.splice(i,1);
+    const e=ui.editing,c=coll(e.kind),i=c.findIndex(x=>x.id===e.id);
+    if(i>=0){logAction('Usunięto: '+recTitle(e.kind,c[i]));c.splice(i,1);}
     if(e.kind==='resolution')db.meetings.forEach(m=>{m.resIds=(m.resIds||[]).filter(id=>id!==e.id);});
     save();ui.editing=null;ui.confirm=null;render(false);window.scrollTo(0,0);toast('Usunięto.');
   },
   delcancel(){ui.confirm=null;render();},
   addmember(){
     if(!isAdmin())return;
-    const m={id:uid(),name:'',func:'Przedstawiciel klasy',cls:'',g:'f',pin:'',canEdit:false};db.members.push(m);save();ui.focusBind=null;render();
+    const m={id:uid(),name:'',func:'Przedstawiciel klasy',cls:'',g:'f',pin:'',canEdit:false};db.members.push(m);logAction('Dodano nowego członka.');save();ui.focusBind=null;render();
     const el=$app.querySelector('[data-root="member:'+m.id+'"] input');if(el)el.focus();
   },
   delmember(el){
     if(!isAdmin())return;
     const id=el.dataset.id;if(id===db.settings.adminId)return;
     if(ui.confirm!=='m'+id){ui.confirm='m'+id;render();return;}
+    const mm=db.members.find(x=>x.id===id);
     db.members=db.members.filter(x=>x.id!==id);db.meetings.forEach(m=>{if(m.att)delete m.att[id];});
     if(ui.voterId===id){ui.voterId='';saveVoterId('');}
+    logAction('Usunięto członka: '+(mm?(mm.name||'(bez nazwiska)'):'?'));
     save();ui.confirm=null;render();
   },
   delmembercancel(){ui.confirm=null;render();},
@@ -2107,10 +2142,11 @@ const ACTIONS={
     const rec={id:d.id||uid(),title:String(d.title).trim(),type:d.type||'impreza',date:d.date,dateEnd:d.dateEnd&&d.dateEnd>d.date?d.dateEnd:'',time:d.time||'',place:String(d.place||'').trim(),desc:String(d.desc||'').trim(),author:(curMember()||{}).name||''};
     db.events=db.events||[];const i=db.events.findIndex(x=>x.id===rec.id);
     if(i>=0)db.events[i]=rec;else db.events.push(rec);
+    logAction((i>=0?'Zmieniono wydarzenie: ':'Dodano wydarzenie: ')+rec.title);
     ui.evDraft=null;ui.calM=rec.date.slice(0,7);ui.calDay=rec.date;save();render();toast(i>=0?'Zapisano zmiany.':'Dodano do kalendarza.');
     if(i<0)notifyEvent(rec);
   },
-  evdel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='e'+id){ui.confirm='e'+id;render();return;}db.events=(db.events||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto wydarzenie.');},
+  evdel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='e'+id){ui.confirm='e'+id;render();return;}const ev=(db.events||[]).find(x=>x.id===id);db.events=(db.events||[]).filter(x=>x.id!==id);logAction('Usunięto wydarzenie: '+(ev?ev.title:'?'));ui.confirm=null;save();render();toast('Usunięto wydarzenie.');},
   evhelp(el){
     const me=curMember();if(!me){toast('Zaloguj się swoim PIN-em, aby zgłosić pomoc.');return;}
     const id=el.dataset.id,e=(db.events||[]).find(x=>x.id===id);if(!e)return;
