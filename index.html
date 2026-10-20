@@ -1062,7 +1062,7 @@ function curMember(){const em=window.__authEmail;if(em){return db.members.find(x
 function isAdmin(){const m=curMember();return !!(m&&db.settings.adminId&&m.id===db.settings.adminId);}
 function isChairRole(m){return !!(m&&/^(Przewodnicz|Zastępca przewodnicz)/.test(m.func||''));}
 function canEditDocs(){if(ui.readOnly)return false;const m=curMember();return !!(m&&(m.canEdit||isAdmin()||isChairRole(m)));}
-function locked(){return ui.readOnly||!canEditDocs();}
+function locked(kind){if(ui.readOnly)return true;const k=kind||(ui.editing&&ui.editing.kind);if(k==='meeting'||k==='resolution')return !canPlan();return !canEditDocs();}
 function adminName(){const m=db.members.find(x=>x.id===db.settings.adminId);return m?m.name:'brak';}
 function adminNeedsSetup(){const m=db.members.find(x=>x.id===db.settings.adminId);return !!(m&&!m.pin&&!String(m.email||'').trim());}
 
@@ -1416,7 +1416,7 @@ function voteItem(r){
   }else h+='<p class="hint">Nie bierzesz udziału w tym głosowaniu.</p>';
   h+='<p class="hint" style="margin:10px 0 0">Oddane głosy: '+t.total+(r.body!=='rada'&&voters.length?' z '+voters.length:'')+' – za '+t.za+', przeciw '+t.przeciw+', wstrzymało się '+t.wstrz+'.'+(missing.length&&r.body!=='rada'?' Brakuje głosu: '+missing.map(m=>esc(m.name)).join(', ')+'.':'')+'</p>';
   if(canPlan()&&mailCfg()&&missing.length)h+='<p style="margin:10px 0 0"><button class="btn small" data-act="pollremind" data-id="'+r.id+'">Wyślij przypomnienie e-mail do niegłosujących</button></p>';
-  if(!isRep(me))h+='<p style="margin:10px 0 0"><button class="btn small" data-act="open" data-kind="resolution" data-id="'+r.id+'">Szczegóły wniosku'+(locked()?'':' i zakończenie głosowania')+'</button></p>';
+  if(!isRep(me))h+='<p style="margin:10px 0 0"><button class="btn small" data-act="open" data-kind="resolution" data-id="'+r.id+'">Szczegóły wniosku'+(locked('resolution')?'':' i zakończenie głosowania')+'</button></p>';
   return h+'</div>';
 }
 function glosowanieHtml(){
@@ -1472,8 +1472,8 @@ function bulkSelBar(kind){
    '<span class="hint" style="margin:0">Zaznaczono: '+n+'</span>'+
    '<div class="moreacts">'+
     (ui.confirm==='bulkdel'?
-      '<span class="confirmrow"><span class="chint">Na pewno usunąć ('+n+')?</span><button class="btn warn" data-act="bulkdel">Tak, usuń</button><button class="btn" data-act="bulkdelcancel">Anuluj</button></span>'
-      :'<button class="btn warn" data-act="bulkdel"'+(n?'':' disabled')+'>Usuń zaznaczone</button>')+
+      '<span class="confirmrow"><span class="chint">Na pewno usunąć ('+n+')?</span><button class="btn warn" data-act="bulkdel" data-kind="'+kind+'">Tak, usuń</button><button class="btn" data-act="bulkdelcancel">Anuluj</button></span>'
+      :'<button class="btn warn" data-act="bulkdel" data-kind="'+kind+'"'+(n?'':' disabled')+'>Usuń zaznaczone</button>')+
     '<button class="btn" data-act="bulkselcancel">Zakończ zaznaczanie</button>'+
    '</div></div>';
 }
@@ -1541,21 +1541,21 @@ function listHtml(){
     const ms=[...db.meetings].filter(m=>ui.allYears||inSY(m.date,viewYear)).sort((a,b)=>b.date.localeCompare(a.date));
     const selOn=ui.sel&&ui.sel.kind==='meeting';
     h+=yearBar();
-    h+=head('Zebrania','Protokoły i listy obecności',locked()?'':(selOn?'':'<div class="moreacts">'+(ms.length?'<button class="btn" data-act="bulkselon" data-kind="meeting">Zaznacz kilka</button>':'')+'<button class="btn primary" data-act="new" data-kind="meeting">Nowe zebranie</button></div>'));
+    h+=head('Zebrania','Protokoły i listy obecności',locked('meeting')?'':(selOn?'':'<div class="moreacts">'+(ms.length?'<button class="btn" data-act="bulkselon" data-kind="meeting">Zaznacz kilka</button>':'')+'<button class="btn primary" data-act="new" data-kind="meeting">Nowe zebranie</button></div>'));
     h+=bulkSelBar('meeting');
-    if(!db.meetings.length)h+=emptyBox('Tu pojawią się zebrania',locked()?'Nic tu jeszcze nie dodano.':'Dodaj pierwsze, zaznacz obecnych i wpisz przebieg – protokół złoży się sam.',locked()?'':'<br><button class="btn primary" data-act="new" data-kind="meeting">Dodaj zebranie</button>');
-    else if(!ms.length)h+=emptyBox('Brak zebrań w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked()?'':' albo dodaj nowe zebranie.'),locked()?'':'<br><button class="btn primary" data-act="new" data-kind="meeting">Dodaj zebranie</button>');
+    if(!db.meetings.length)h+=emptyBox('Tu pojawią się zebrania',locked('meeting')?'Nic tu jeszcze nie dodano.':'Dodaj pierwsze, zaznacz obecnych i wpisz przebieg – protokół złoży się sam.',locked('meeting')?'':'<br><button class="btn primary" data-act="new" data-kind="meeting">Dodaj zebranie</button>');
+    else if(!ms.length)h+=emptyBox('Brak zebrań w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked('meeting')?'':' albo dodaj nowe zebranie.'),locked('meeting')?'':'<br><button class="btn primary" data-act="new" data-kind="meeting">Dodaj zebranie</button>');
     else h+='<div class="list">'+ms.map(meetingCard).join('')+'</div>';
   }else if(ui.tab==='uchwaly'){
     let rs=db.resolutions.filter(r=>ui.allYears||num(r.year)===viewYear).sort((a,b)=>(num(b.year||0)-num(a.year||0))||(num(b.num)-num(a.num)));
     const selOn=ui.sel&&ui.sel.kind==='resolution';
     h+=yearBar();
-    h+=head('Uchwały','Numeracja i głosowanie liczą się same',locked()?'':(selOn?'':'<div class="moreacts"><button class="btn" data-act="bulkopen">Wklej listę</button>'+(rs.length?'<button class="btn" data-act="bulkselon" data-kind="resolution">Zaznacz kilka</button>':'')+'<button class="btn primary" data-act="new" data-kind="resolution">Nowa uchwała</button></div>'));
+    h+=head('Uchwały','Numeracja i głosowanie liczą się same',locked('resolution')?'':(selOn?'':'<div class="moreacts"><button class="btn" data-act="bulkopen">Wklej listę</button>'+(rs.length?'<button class="btn" data-act="bulkselon" data-kind="resolution">Zaznacz kilka</button>':'')+'<button class="btn primary" data-act="new" data-kind="resolution">Nowa uchwała</button></div>'));
     h+=bulkSelBar('resolution');
-    if(!locked()&&!selOn&&!db.flags.seed20)h+=seedCard();
-    if(!locked()&&!selOn&&ui.bulk)h+=bulkCard();
-    if(!db.resolutions.length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked()?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
-    else if(!rs.length)h+=emptyBox('Brak uchwał w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked()?'':' albo dodaj nową uchwałę.'),locked()?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
+    if(!locked('resolution')&&!selOn&&!db.flags.seed20)h+=seedCard();
+    if(!locked('resolution')&&!selOn&&ui.bulk)h+=bulkCard();
+    if(!db.resolutions.length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked('resolution')?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked('resolution')?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
+    else if(!rs.length)h+=emptyBox('Brak uchwał w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked('resolution')?'':' albo dodaj nową uchwałę.'),locked('resolution')?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else h+='<div class="list">'+rs.map(resCard).join('')+'</div>'+(selOn?'':'<p style="margin-top:16px"><button class="btn" data-act="dlall">Pobierz widoczne uchwały w jednym pliku Word</button></p>');
   }else if(ui.tab==='kalendarz'){
     h+=kalendarzHtml();
@@ -1985,7 +1985,7 @@ const ACTIONS={
   goevent(el){const id=el.dataset.id,ev=(db.events||[]).find(x=>x.id===id);if(!ev)return;ui.tab='kalendarz';ui.calM=ev.date.slice(0,7);ui.calDay=ev.date;ui.editing=null;ui.confirm=null;ui.sel=null;render(false);window.scrollTo(0,0);},
   open(el){if(isRep(curMember())&&el.dataset.kind!=='doc'){toast('Ten dokument jest dostępny tylko dla Prezydium.');return;}ui.editing={kind:el.dataset.kind,id:el.dataset.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   back(){ui.editing=null;ui.confirm=null;render(false);window.scrollTo(0,0);},
-  new(el){const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
+  new(el){if(locked(el.dataset.kind))return;const r=newRec(el.dataset.kind,el.dataset.type);ui.editing={kind:el.dataset.kind,id:r.id};ui.editTab='form';ui.confirm=null;render(false);window.scrollTo(0,0);},
   seg(el){ui.editTab=el.dataset.v;render(false);window.scrollTo(0,0);},
   yprev(){ui.allYears=false;viewYear--;saveViewYear();render();},
   ynext(){ui.allYears=false;viewYear++;saveViewYear();render();},
@@ -2234,7 +2234,7 @@ document.addEventListener('click',e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
   const act=el.dataset.act;
   if(ui.readOnly&&!VIEW_SAFE.has(act))return;
-  if(!ui.readOnly&&locked()&&!VIEW_SAFE.has(act)&&!LOCKED_SAFE.has(act))return;
+  if(!ui.readOnly&&locked(el.dataset.kind)&&!VIEW_SAFE.has(act)&&!LOCKED_SAFE.has(act))return;
   const f=ACTIONS[act];if(!f)return;
   try{f(el,e);}
   catch(err){console.error(err);toast('Błąd: '+(err&&err.message?err.message:String(err)));}
