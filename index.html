@@ -251,7 +251,7 @@ input:disabled{opacity:.55}
 .ev-table th.num{text-align:center}
 .ev-table tr.mine{background:var(--rose-tint2)}
 .ev-table td.empty{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ev-table input{width:100%;min-height:36px;padding:5px 6px;font-size:13px;border-radius:10px;text-align:left;box-sizing:border-box}
+.ev-table input{width:100%;min-height:36px;padding:5px 6px;font-size:13px;border-radius:10px;text-align:left;box-sizing:border-box;border:1.5px solid var(--line);background:var(--field);color:var(--ink)}
 .ev-table input.num{text-align:center;padding:5px 2px}
 .sh-sp{height:10px}
 .sh-pb{border:0;border-top:2px dashed #ccc;margin:26px -10px}
@@ -1038,7 +1038,8 @@ async function boot(){
         let json=null;
         try{json=JSON.stringify(data);}catch(e){}
         if(json!==null&&json===lastPushed){db=normalize(data);return;}
-        if(ui.editing)return;
+        const ae=document.activeElement;
+        if(ui.editing||(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&$app.contains(ae)))return;
         db=normalize(data);render();
       },()=>{});
     }catch(e){}
@@ -1250,9 +1251,9 @@ function evItemsBlock(e){
         if(!canEditRow)return '<tr'+trCls+'><td>'+esc(r.cls)+'</td><td class="num'+(r.v.babeczki?'':' empty')+'">'+esc(r.v.babeczki||'–')+'</td><td class="num'+(r.v.ciasto?'':' empty')+'">'+esc(r.v.ciasto||'–')+'</td><td class="'+(r.v.inne?'':'empty')+'">'+esc(r.v.inne||'–')+'</td></tr>';
         const root='data-root="evcontrib:'+e.id+':'+esc(r.cls)+'"';
         return '<tr '+root+trCls+'><td>'+esc(r.cls)+'</td>'+
-          '<td><input class="num" data-bind="babeczki" value="'+esc(r.v.babeczki||'')+'" placeholder="szt."></td>'+
-          '<td><input class="num" data-bind="ciasto" value="'+esc(r.v.ciasto||'')+'" placeholder="szt."></td>'+
-          '<td><input data-bind="inne" value="'+esc(r.v.inne||'')+'" placeholder="np. owoce"></td>'+
+          '<td><input type="text" class="num" data-bind="babeczki" value="'+esc(r.v.babeczki||'')+'" placeholder="szt."></td>'+
+          '<td><input type="text" class="num" data-bind="ciasto" value="'+esc(r.v.ciasto||'')+'" placeholder="szt."></td>'+
+          '<td><input type="text" data-bind="inne" value="'+esc(r.v.inne||'')+'" placeholder="np. owoce"></td>'+
           '</tr>';
       }).join('')+'</tbody></table></div>';
   }
