@@ -1064,7 +1064,7 @@ function isChairRole(m){return !!(m&&/^(Przewodnicz|Zastępca przewodnicz)/.test
 function canEditDocs(){if(ui.readOnly)return false;const m=curMember();return !!(m&&(m.canEdit||isAdmin()||isChairRole(m)));}
 function locked(){return ui.readOnly||!canEditDocs();}
 function adminName(){const m=db.members.find(x=>x.id===db.settings.adminId);return m?m.name:'brak';}
-function adminNeedsSetup(){const m=db.members.find(x=>x.id===db.settings.adminId);return !!(m&&!m.pin);}
+function adminNeedsSetup(){const m=db.members.find(x=>x.id===db.settings.adminId);return !!(m&&!m.pin&&!String(m.email||'').trim());}
 
 const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
 const $app=document.getElementById('app');
@@ -1186,8 +1186,10 @@ function topHtml(){
   const me=curMember();
   let idrow='';
   const canReclaim=me&&!isAdmin()&&typeof window.__wasAdmin==='function'&&window.__wasAdmin();
-  if(me)idrow='<div class="idrow"><span class="idpill">'+(isAdmin()?'Administrator: ':'Zalogowano: ')+esc(me.name)+(ui.readOnly?' (podgląd)':'')+'</span>'+(canReclaim?'<button class="btn small warn" data-act="reclaimadmin">Odzyskaj uprawnienia administratora</button>':'')+'<button class="btn small" data-act="logout">Wyloguj</button></div>';
-  else idrow='<div class="idrow"><span class="idpill ghost">'+(ui.readOnly?'Podgląd – niezalogowano':'Niezalogowano')+'</span></div>';
+  const canClaim=!isAdmin()&&adminNeedsSetup();
+  const claimBtn=canClaim?'<button class="btn small warn" data-act="claimadmin">Przejmij rolę administratora</button>':'';
+  if(me)idrow='<div class="idrow"><span class="idpill">'+(isAdmin()?'Administrator: ':'Zalogowano: ')+esc(me.name)+(ui.readOnly?' (podgląd)':'')+'</span>'+(canReclaim?'<button class="btn small warn" data-act="reclaimadmin">Odzyskaj uprawnienia administratora</button>':'')+claimBtn+'<button class="btn small" data-act="logout">Wyloguj</button></div>';
+  else idrow='<div class="idrow"><span class="idpill ghost">'+(ui.readOnly?'Podgląd – niezalogowano':'Niezalogowano')+'</span>'+claimBtn+'</div>';
   return (storageOk||ui.readOnly?'':'<div class="banner">Ta przeglądarka nie zapisuje danych na stałe. Po zamknięciu strony dane mogą zniknąć – pobierz kopię zapasową w Ustawieniach.</div>')+
   idrow+
   '<header class="top"><div class="logo"><img src="'+RR_LOGO+'" alt="Logo Rady Rodziców"></div><div style="flex:1;min-width:0"><h1>Dokumenty Rady Rodziców</h1><p>'+esc(db.settings.school)+'</p></div></header>';
@@ -2056,9 +2058,11 @@ const ACTIONS={
   },
   logout(){if(window.__fbSignOut)window.__fbSignOut();},
   claimadmin(){
-    const m=db.members.find(x=>x.id===db.settings.adminId);
-    if(!m||m.pin){toast('To już nie jest możliwe.');return;}
-    ui.voterId=m.id;saveVoterId(m.id);render();toast('Zalogowano jako '+m.name+'. Ustaw swój PIN w zakładce Członkowie.');
+    const cur=db.members.find(x=>x.id===db.settings.adminId);
+    if(!cur||cur.pin||String(cur.email||'').trim()){toast('To już nie jest możliwe.');return;}
+    const m=curMember();
+    if(m){db.settings.adminId=m.id;save();render();toast('Przejęto rolę administratora.');return;}
+    ui.voterId=cur.id;saveVoterId(cur.id);render();toast('Zalogowano jako '+cur.name+'. Ustaw swój PIN w zakładce Członkowie.');
   },
   setadmin(el){
     if(!isAdmin())return;
