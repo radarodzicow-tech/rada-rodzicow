@@ -242,6 +242,13 @@ input:disabled{opacity:.55}
 .sh-table{width:100%;border-collapse:collapse;margin:6px 0 12px;font-size:12.5px}
 .sh-table th,.sh-table td{border:1px solid #aaa;padding:4px 6px}
 .sh-table th{background:#ededed}
+.barchart{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding-bottom:2px}
+.bar-col{display:flex;flex-direction:column;align-items:center;min-width:38px;flex:0 0 auto}
+.bar-val{font-size:11px;font-weight:700;color:var(--peach-d);margin-bottom:4px;white-space:nowrap}
+.bar-wrap{height:120px;display:flex;align-items:flex-end}
+.bar{width:26px;background:var(--peach);border-radius:7px 7px 2px 2px}
+.bar-lbl{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase}
+.bar-in{width:52px!important;min-height:0!important;text-align:center;border:1.5px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);padding:3px 2px!important;font-size:11.5px;margin-top:5px}
 .evtablewrap{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin:10px 0 4px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow)}
 .ev-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;background:var(--surface)}
 .ev-table th{background:var(--rose-tint1);color:var(--rose-d);font-weight:700;text-align:left;padding:8px 6px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--line)}
@@ -1077,7 +1084,7 @@ function logAction(action){
   }catch(e){}
 }
 
-const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
+const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,duesBulk:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
 const $app=document.getElementById('app');
 const MON=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
 const ICONS={
@@ -1106,6 +1113,7 @@ function resolveRoot(s){
   if(s==='settings')return db.settings;
   if(s==='rec')return getRec();
   if(s==='bulk')return ui.bulk;
+  if(s==='duesbulk')return ui.duesBulk;
   if(s==='notedraft')return ui.noteDraft;
   if(s==='evdraft')return ui.evDraft;
   if(s==='anndraft')return ui.annDraft;
@@ -1190,6 +1198,31 @@ function bulkCard(){
   return '<div class="card" data-root="bulk" style="margin-bottom:16px"><h3 style="font-size:17px;margin-bottom:8px">Dodaj wiele uchwał naraz</h3><p class="hint">Wklej listę – jedna pozycja w linii, kwota na końcu. Możesz wkleić rozmowę z WhatsAppa w całości. Głosy zostaną jako kropki do wpisania ręcznie.</p>'+
    ta(ui.bulk,'Lista','text',7)+inp(ui.bulk,'Data uchwał (w każdej możesz ją potem zmienić)','date',{type:'date'})+
    '<div id="bulkprev">'+bulkPrev()+'</div><div class="moreacts" style="margin-top:12px"><button class="btn primary" data-act="bulkok">Dodaj uchwały</button><button class="btn" data-act="bulkcancel">Anuluj</button></div></div>';
+}
+function parseDuesBulk(text){
+  const out=[];
+  String(text||'').split('\n').forEach(line=>{
+    let s=line.trim();if(!s)return;
+    s=s.replace(/[;,\t]+/g,' ').replace(/\s+/g,' ');
+    const parts=s.split(' ');
+    if(parts.length<2)return;
+    const cls=parts[0];
+    const sumNums=x=>String(x).split('+').reduce((a,n)=>a+(Number(n.trim())||0),0);
+    const students=parts[1]!=null?sumNums(parts[1]):'';
+    const paid=parts[2]!=null?sumNums(parts[2]):'';
+    out.push({cls:cls,students:students,paid:paid});
+  });
+  return out;
+}
+function duesBulkPrev(){
+  const it=parseDuesBulk(ui.duesBulk&&ui.duesBulk.text);
+  if(!it.length)return '<p class="hint">Tu pojawi się podgląd rozpoznanych klas.</p>';
+  return '<p class="hint"><b>Rozpoznano: '+it.length+'</b> klas.</p>'+it.map(x=>'<div class="rlink"><span><b>'+esc(x.cls)+'</b> – uczniów: '+(x.students===''?'–':x.students)+', wpłat: '+(x.paid===''?'–':x.paid)+'</span></div>').join('');
+}
+function duesBulkCard(){
+  return '<div class="card" data-root="duesbulk" style="margin-bottom:16px"><h3 style="font-size:17px;margin-bottom:8px">Wklej dane z pliku</h3><p class="hint">Jedna klasa w linii: nazwa klasy, liczba uczniów, liczba wpłat (oddzielone spacją, tabulatorem, przecinkiem lub średnikiem). Jeśli klasa już jest na liście dla tego roku – dane zostaną zaktualizowane, jeśli nie – dodana jako nowa.</p>'+
+   ta(ui.duesBulk,'Lista','text',10)+
+   '<div id="duesbulkprev">'+duesBulkPrev()+'</div><div class="moreacts" style="margin-top:12px"><button class="btn primary" data-act="duesbulkok">Wczytaj dane</button><button class="btn" data-act="duesbulkcancel">Anuluj</button></div></div>';
 }
 
 /* --- widoki listowe --- */
@@ -1641,25 +1674,47 @@ function duesTotalHtml(){
   const totS=rows.reduce((a,r)=>a+(Number(r.students)||0),0),totP=rows.reduce((a,r)=>a+(Number(r.paid)||0),0);
   return '<p class="hint" id="duestotal" style="margin-top:10px">'+(totS>0?'Łącznie: '+totP+' z '+totS+' uczniów – <b>'+(Math.round(totP/totS*1000)/10)+'%</b>.':'Wpisz liczbę uczniów, aby zobaczyć łączny procent.')+'</p>';
 }
+function duesChartHtml(rows){
+  if(!rows.length)return '';
+  const edit=!locked();
+  const byGrade={};
+  rows.forEach(r=>{
+    const m=String(r.cls||'').match(/^(\d+)/);
+    const g=m?m[1]:'inne';
+    (byGrade[g]=byGrade[g]||[]).push(r);
+  });
+  const grades=Object.keys(byGrade).sort((a,b)=>(Number(a)||99)-(Number(b)||99));
+  const maxH=110;
+  let h='';
+  grades.forEach(g=>{
+    const items=byGrade[g].slice().sort((a,b)=>String(a.cls||'').localeCompare(String(b.cls||''),'pl'));
+    h+='<div class="card" style="margin-bottom:12px"><h3 style="font-size:14.5px;margin-bottom:10px">Klasa '+esc(g)+'</h3>'+
+      '<div class="barchart">'+items.map(r=>{
+        const s=Number(r.students)||0,pd=Number(r.paid)||0,pct=s>0?Math.round(pd/s*1000)/10:0;
+        const barH=s>0?Math.max(2,Math.round(maxH*Math.min(pct,100)/100)):2;
+        const pctLbl=s>0?pct+'%':'–';
+        if(!edit)return '<div class="bar-col"><span class="bar-val">'+pctLbl+'</span><div class="bar-wrap"><div class="bar" style="height:'+barH+'px"></div></div><span class="bar-lbl">'+esc(r.cls||'')+'</span></div>';
+        const root='data-root="dues:'+r.id+'"';
+        return '<div class="bar-col" '+root+'><span class="bar-val" id="duespct-'+r.id+'">'+pctLbl+'</span>'+
+          '<div class="bar-wrap"><div class="bar" id="duesbar-'+r.id+'" style="height:'+barH+'px"></div></div>'+
+          '<input data-bind="cls" value="'+esc(r.cls||'')+'" class="bar-in" placeholder="klasa">'+
+          '<input type="number" min="0" data-bind="students" data-type="num" value="'+(r.students==null?'':r.students)+'" class="bar-in" placeholder="ucz.">'+
+          '<input type="number" min="0" data-bind="paid" data-type="num" value="'+(r.paid==null?'':r.paid)+'" class="bar-in" placeholder="wpł.">'+
+          '<button class="btn small ghost" data-act="duesdelrow" data-id="'+r.id+'" style="margin-top:4px;padding:2px 8px;font-size:11px">Usuń</button></div>';
+      }).join('')+'</div></div>';
+  });
+  return h;
+}
 function statystykiHtml(){
   const rows=duesForYear(viewYear);
-  let h=head('Statystyki','Wpłaty na Radę Rodziców wg klas',locked()?'':'<button class="btn primary" data-act="duesaddrow">+ Dodaj klasę</button>');
+  let h=head('Statystyki','Wpłaty na Radę Rodziców wg klas',locked()?'':'<button class="btn primary" data-act="duesaddrow">+ Dodaj klasę</button><button class="btn" data-act="duesbulkopen">Wklej dane z pliku</button>');
   h+=yearBar();
+  if(!locked()&&ui.duesBulk)h+=duesBulkCard();
   if(!rows.length){
     h+=emptyBox('Brak danych dla roku '+esc(syLabel(viewYear)),locked()?'Nic tu jeszcze nie wpisano.':'Dodaj pierwszą klasę i wpisz liczbę uczniów oraz liczbę wpłat.',locked()?'':'<br><button class="btn primary" data-act="duesaddrow">Dodaj klasę</button>');
     return h;
   }
-  h+='<table class="sh-table"><thead><tr><th>Klasa</th><th>Uczniów</th><th>Wpłat</th><th>%</th>'+(locked()?'':'<th></th>')+'</tr></thead><tbody>'+
-    rows.map(r=>{
-      const s=Number(r.students)||0,pd=Number(r.paid)||0,pct=s>0?(Math.round(pd/s*1000)/10)+'%':'–';
-      if(locked())return '<tr><td>'+esc(r.cls||'')+'</td><td>'+s+'</td><td>'+pd+'</td><td>'+pct+'</td></tr>';
-      const root='data-root="dues:'+r.id+'"';
-      return '<tr '+root+'><td><input data-bind="cls" value="'+esc(r.cls||'')+'" style="width:70px" placeholder="np. 3a"></td>'+
-        '<td><input type="number" min="0" data-bind="students" data-type="num" value="'+(r.students==null?'':r.students)+'" style="width:70px"></td>'+
-        '<td><input type="number" min="0" data-bind="paid" data-type="num" value="'+(r.paid==null?'':r.paid)+'" style="width:70px"></td>'+
-        '<td id="duespct-'+r.id+'">'+pct+'</td>'+
-        '<td><button class="btn small ghost" data-act="duesdelrow" data-id="'+r.id+'">Usuń</button></td></tr>';
-    }).join('')+'</tbody></table>'+duesTotalHtml();
+  h+=duesChartHtml(rows)+duesTotalHtml();
   return h;
 }
 function noteCard(n){
@@ -1907,6 +1962,7 @@ function onBind(t){
   let v=t.type==='checkbox'?t.checked:(t.dataset.type==='num'?(t.value===''?'':Number(t.value)):t.value);
   setP(root,p,v);
   if(rk==='bulk'){const pv=document.getElementById('bulkprev');if(pv)pv.innerHTML=bulkPrev();return;}
+  if(rk==='duesbulk'){const pv=document.getElementById('duesbulkprev');if(pv)pv.innerHTML=duesBulkPrev();return;}
   if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft'||rk.indexOf('evitem:')===0)return;
   const e=ui.editing;
   if(e&&e.kind==='resolution'&&root===getRec()){
@@ -1923,8 +1979,11 @@ function onBind(t){
   }
   if(e&&e.kind==='doc'&&root===getRec()){root.updated=todayISO();}
   if(rk.indexOf('dues:')===0&&root){
+    const s=Number(root.students)||0,pd=Number(root.paid)||0,pct=s>0?Math.round(pd/s*1000)/10:0;
     const el=document.getElementById('duespct-'+root.id);
-    if(el){const s=Number(root.students)||0,pd=Number(root.paid)||0;el.textContent=s>0?(Math.round(pd/s*1000)/10)+'%':'–';}
+    if(el)el.textContent=s>0?pct+'%':'–';
+    const bar=document.getElementById('duesbar-'+root.id);
+    if(bar)bar.style.height=(s>0?Math.max(2,Math.round(110*Math.min(pct,100)/100)):2)+'px';
     const tot=document.getElementById('duestotal');if(tot)tot.outerHTML=duesTotalHtml();
     save();return;
   }
@@ -2183,6 +2242,21 @@ const ACTIONS={
     const id=el.dataset.id;
     db.duesStats=(db.duesStats||[]).filter(x=>x.id!==id);
     save();render();
+  },
+  duesbulkopen(){if(locked())return;ui.duesBulk={text:''};render();},
+  duesbulkcancel(){ui.duesBulk=null;render();},
+  duesbulkok(){
+    if(locked())return;
+    const it=parseDuesBulk(ui.duesBulk&&ui.duesBulk.text);if(!it.length){toast('Wklej najpierw listę.');return;}
+    db.duesStats=db.duesStats||[];
+    let added=0,updated=0;
+    it.forEach(x=>{
+      const row=db.duesStats.find(r=>r.year===viewYear&&String(r.cls||'').trim().toLowerCase()===x.cls.trim().toLowerCase());
+      if(row){row.students=x.students;row.paid=x.paid;updated++;}
+      else{db.duesStats.push({id:uid(),cls:x.cls,students:x.students,paid:x.paid,year:viewYear});added++;}
+    });
+    logAction('Wczytano dane wpłat z pliku: '+added+' nowych, '+updated+' zaktualizowanych klas.');
+    save();ui.duesBulk=null;render();toast('Wczytano dane: '+added+' nowych, '+updated+' zaktualizowanych klas.');
   },
   annnew(){if(!canPlan())return;ui.annDraft={text:'',until:''};ui.focusBind='text';render();},
   anncancel(){ui.annDraft=null;render();},
