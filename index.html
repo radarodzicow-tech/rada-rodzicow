@@ -664,7 +664,7 @@ const byCls=(a,b)=>{const ca=String(a.cls||'').trim(),cb=String(b.cls||'').trim(
 function defaults(){
   const s=syStart(todayISO());
   return {v:1,
-    flags:{},settings:{school:'Szkoła Podstawowa nr 4 im. I. J. Paderewskiego w Pruszczu Gdańskim',schoolYear:syLabel(s),presidium:10,logo:true,adminId:''},
+    flags:{},settings:{school:'Szkoła Podstawowa nr 4 im. I. J. Paderewskiego w Pruszczu Gdańskim',schoolYear:syLabel(s),presidium:10,logo:true,adminId:'',duesRate:80},
     members:[
       {id:uid(),name:'Sylwia Waleńska',func:'Przewodnicząca',cls:'',g:'f',pin:'',canEdit:true},
       {id:uid(),name:'Agnieszka Lustyk',func:'Zastępca przewodniczącej',cls:'',g:'f',pin:'',canEdit:true},
@@ -1672,7 +1672,9 @@ function duesForYear(y){return (db.duesStats||[]).filter(x=>x.year===y).sort((a,
 function duesTotalHtml(){
   const rows=duesForYear(viewYear);
   const totS=rows.reduce((a,r)=>a+(Number(r.students)||0),0),totP=rows.reduce((a,r)=>a+(Number(r.paid)||0),0);
-  return '<p class="hint" id="duestotal" style="margin-top:10px">'+(totS>0?'Łącznie: '+totP+' z '+totS+' uczniów – <b>'+(Math.round(totP/totS*1000)/10)+'%</b>.':'Wpisz liczbę uczniów, aby zobaczyć łączny procent.')+'</p>';
+  const rate=Number(db.settings.duesRate)||0;
+  let h='<p class="hint" id="duestotal" style="margin-top:10px">'+(totS>0?'Łącznie: '+totP+' z '+totS+' uczniów – <b>'+(Math.round(totP/totS*1000)/10)+'%</b>.':'Wpisz liczbę uczniów, aby zobaczyć łączny procent.')+(rate>0&&totP>0?' Łączna kwota zebranych składek: <b>'+(totP*rate).toLocaleString('pl-PL')+' zł</b>.':'')+'</p>';
+  return h;
 }
 function duesChartHtml(rows){
   if(!rows.length)return '';
@@ -1752,6 +1754,7 @@ function settingsHtml(){
   h+='<div class="form"><div class="card" '+r+'><h3>Szkoła i rada</h3>'+
     ta(s,'Nazwa szkoły w nagłówku dokumentów','school',2)+
     inp(s,'Liczba uprawnionych do głosowania w Prezydium','presidium',{type:'number',num:true,min:0})+
+    inp(s,'Wysokość składki od ucznia (zł) – do wyliczenia łącznej kwoty na Statystykach','duesRate',{type:'number',num:true,min:0})+
     chk(s,'Pokaż herb szkoły w nagłówku','logo',true)+
     '<p class="hint" style="margin:4px 0 0">Rok szkolny (wrzesień–czerwiec), w którym pracujesz, przełączysz strzałkami u góry Pulpitu i zakładek Zebrania, Uchwały i Sprawozdania – obecnie <b>'+esc(syLabel(viewYear))+'</b>.</p></div>';
   const mc=(s.mail=s.mail||{});
