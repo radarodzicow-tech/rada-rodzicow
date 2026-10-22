@@ -1290,6 +1290,11 @@ function evContribRows(e){
   const c=e.contrib||{};
   return evClasses().map(cls=>({cls:cls,v:c[cls]||{babeczki:'',ciasto:'',inne:''}}));
 }
+function evHasContribData(e){
+  const c=e.contrib||{};
+  return Object.keys(c).some(cls=>{const v=c[cls];return v&&(String(v.babeczki||'').trim()||String(v.ciasto||'').trim()||String(v.inne||'').trim());});
+}
+function evShowsBring(e){return !!(e.bring||evHasContribData(e));}
 function evMissingClasses(e){
   const all=evClasses();if(!all.length)return [];
   const c=e.contrib||{};
@@ -1343,14 +1348,14 @@ function evHelpBlock(e){
 function evRow(i,withActs,linked){
   const p=i.date.split('-'),cls=i.kind==='mt'?' mt':i.kind==='fr'?' fr':'';
   const meta=[i.end!==i.date?'do '+fmtDate(i.end):'',i.time,i.place].filter(Boolean).join(' · ');
-  const isImpreza=i.kind==='ev'&&i.src&&i.src.type==='impreza';
+  const isImpreza=i.kind==='ev'&&i.src&&i.src.type==='impreza'&&evShowsBring(i.src);
   const missingDot=isImpreza?'<span id="evtitlewarn-'+i.src.id+'">'+(evMissingClasses(i.src).length?' <span class="vwarn" style="font-size:11px" title="Nie wszystkie klasy się zgłosiły"><i style="width:16px;height:16px;font-size:11px">!</i></span>':'')+'</span>':'';
   const jump=linked&&i.kind==='ev'?'<button class="btn small ghost" data-act="goevent" data-id="'+i.id+'" aria-label="Przejdź do wydarzenia" title="Przejdź do wydarzenia" style="flex:none;padding:6px 10px">→</button>':
     linked&&i.kind==='mt'?'<button class="btn small ghost" data-act="open" data-kind="meeting" data-id="'+i.id+'" aria-label="Otwórz zebranie" title="Otwórz zebranie" style="flex:none;padding:6px 10px">→</button>':'';
   let h='<div class="evrow" style="'+(jump?'align-items:center':'')+'"><div class="evdate'+cls+'"><b>'+(+p[2])+'</b><small>'+MON[+p[1]-1]+'</small></div><div class="evbody"><div class="t">'+esc(i.title)+missingDot+'</div>'+
     '<div class="m">'+(i.kind==='mt'?'Zebranie':i.kind==='fr'?'Dzień wolny od zajęć':'Wydarzenie')+(meta?' · '+esc(meta):'')+'</div>'+(i.desc?'<div class="d">'+esc(i.desc)+'</div>':'');
   if(withActs&&i.meeting&&!isRep(curMember()))h+='<p style="margin:6px 0 0"><button class="btn small" data-act="open" data-kind="meeting" data-id="'+i.id+'">Otwórz zebranie</button></p>';
-  if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza'){h+=evHelpBlock(i.src);h+=evItemsBlock(i.src);}
+  if(withActs&&i.kind==='ev'&&i.src&&i.src.type==='impreza'){h+=evHelpBlock(i.src);if(evShowsBring(i.src))h+=evItemsBlock(i.src);}
   if(withActs&&!i.meeting&&canPlan()){
     h+='<div class="moreacts" style="margin-top:6px"><button class="btn small" data-act="evedit" data-id="'+i.id+'">Zmień</button>'+
       (ui.confirm==='e'+i.id?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn small warn" data-act="evdel" data-id="'+i.id+'">Tak, usuń</button><button class="btn small" data-act="delnotecancel">Anuluj</button></span>':'<button class="btn small ghost" data-act="evdel" data-id="'+i.id+'">Usuń</button>')+'</div>';
@@ -1361,10 +1366,11 @@ function evForm(){
   const d=ui.evDraft,r='data-root="evdraft"';
   return '<div class="card" '+r+'><h3>'+(d.id?'Zmień wydarzenie':'Nowe wydarzenie')+'</h3>'+
     inp(d,'Nazwa','title',{ph:'np. Dzień Dyni, Andrzejki, Festyn rodzinny'})+
-    sel(d,'Rodzaj','type',EVTYPES)+
+    sel(d,'Rodzaj','type',EVTYPES,true)+
     '<div class="g2">'+inp(d,'Data','date',{type:'date'})+inp(d,'Do dnia (jeśli kilka dni)','dateEnd',{type:'date'})+'</div>'+
     '<div class="g2">'+inp(d,'Godzina (opcjonalnie)','time',{type:'time'})+inp(d,'Miejsce (opcjonalnie)','place',{ph:'np. sala gimnastyczna'})+'</div>'+
     ta(d,'Opis (opcjonalnie)','desc',3,'np. Prosimy o upieczenie ciast – zbiórka do 9:00 w świetlicy')+
+    (d.type==='impreza'?chk(d,'Zbieramy zgłoszenia, kto co przyniesie (babeczki, ciasto, inne)','bring'):'')+
     '<div class="moreacts"><button class="btn primary" data-act="evsave">'+(d.id?'Zapisz zmiany':'Dodaj do kalendarza')+'</button><button class="btn" data-act="evcancel">Anuluj</button></div></div>';
 }
 function kalendarzHtml(){
@@ -2254,16 +2260,17 @@ const ACTIONS={
   calprev(){const y=+ui.calM.slice(0,4),m=+ui.calM.slice(5,7)-2;const d=new Date(y,m,1);ui.calM=d.getFullYear()+'-'+pad(d.getMonth()+1);render();},
   calnext(){const y=+ui.calM.slice(0,4),m=+ui.calM.slice(5,7);const d=new Date(y,m,1);ui.calM=d.getFullYear()+'-'+pad(d.getMonth()+1);render();},
   calday(el){ui.calDay=ui.calDay===el.dataset.v?null:el.dataset.v;render();},
-  evnew(el){if(!canPlan())return;ui.evDraft={id:'',title:'',type:'impreza',date:(el&&el.dataset.v)||ui.calDay||todayISO(),dateEnd:'',time:'',place:'',desc:''};ui.focusBind='title';render();window.scrollTo(0,0);},
-  evedit(el){if(!canPlan())return;const e=(db.events||[]).find(x=>x.id===el.dataset.id);if(!e)return;ui.evDraft=Object.assign({},e);render();window.scrollTo(0,0);},
+  evnew(el){if(!canPlan())return;ui.evDraft={id:'',title:'',type:'impreza',date:(el&&el.dataset.v)||ui.calDay||todayISO(),dateEnd:'',time:'',place:'',desc:'',bring:false};ui.focusBind='title';render();window.scrollTo(0,0);},
+  evedit(el){if(!canPlan())return;const e=(db.events||[]).find(x=>x.id===el.dataset.id);if(!e)return;ui.evDraft=Object.assign({},e,{bring:evShowsBring(e)});render();window.scrollTo(0,0);},
   evcancel(){ui.evDraft=null;render();},
   evsave(){
     if(!canPlan())return;const d=ui.evDraft;if(!d)return;
     if(!String(d.title||'').trim()){toast('Wpisz nazwę wydarzenia.');return;}
     if(!d.date){toast('Wybierz datę.');return;}
-    const rec={id:d.id||uid(),title:String(d.title).trim(),type:d.type||'impreza',date:d.date,dateEnd:d.dateEnd&&d.dateEnd>d.date?d.dateEnd:'',time:d.time||'',place:String(d.place||'').trim(),desc:String(d.desc||'').trim(),author:(curMember()||{}).name||''};
+    const rec={id:d.id||uid(),title:String(d.title).trim(),type:d.type||'impreza',date:d.date,dateEnd:d.dateEnd&&d.dateEnd>d.date?d.dateEnd:'',time:d.time||'',place:String(d.place||'').trim(),desc:String(d.desc||'').trim(),bring:!!d.bring,author:(curMember()||{}).name||''};
     db.events=db.events||[];const i=db.events.findIndex(x=>x.id===rec.id);
-    if(i>=0)db.events[i]=rec;else db.events.push(rec);
+    const old=i>=0?db.events[i]:null;
+    if(old){rec.contrib=old.contrib;rec.help=old.help;db.events[i]=rec;}else db.events.push(rec);
     logAction((i>=0?'Zmieniono wydarzenie: ':'Dodano wydarzenie: ')+rec.title);
     ui.evDraft=null;ui.calM=rec.date.slice(0,7);ui.calDay=rec.date;save();render();toast(i>=0?'Zapisano zmiany.':'Dodano do kalendarza.');
     if(i<0)notifyEvent(rec);
