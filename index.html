@@ -1458,22 +1458,6 @@ async function notifyVote(r,reminder){
   else toast('Nie udało się wysłać maili ('+res.why+').');
 }
 function canVote(m,r){if(!m)return false;return r.body==='rada'?true:PRES.indexOf(m.func)>=0;}
-function eventMailText(e){
-  const typeLabel=(EVTYPES.find(x=>x[0]===e.type)||[,e.type])[1]||'Wydarzenie';
-  const when=fmtDate(e.date)+(e.dateEnd?' – '+fmtDate(e.dateEnd):'')+(e.time?', godz. '+e.time:'');
-  return {subject:'Nowe w kalendarzu RR: '+e.title,
-    message:'Dodano nowe wydarzenie do kalendarza Rady Rodziców:\n\n'+e.title+' ('+typeLabel+')\nTermin: '+when+(e.place?'\nMiejsce: '+e.place:'')+(e.desc?'\n\n'+e.desc:'')+'\n\nSzczegóły i zgłoszenie pomocy – w zakładce „Kalendarz” w aplikacji.'};
-}
-async function notifyEvent(e){
-  const me=curMember();
-  const list=db.members.filter(m=>m.email&&(!me||m.id!==me.id)).map(m=>String(m.email).trim());
-  if(!list.length){toast('Nie wysłano maili: nikt inny nie ma zapisanego e-maila (zakładka Członkowie).');return;}
-  const tx=eventMailText(e);
-  const res=await sendMail(list,tx.subject,tx.message);
-  if(res.ok)toast('Wysłano powiadomienie o wydarzeniu do '+res.sent+' os.'+(res.partial?' (część adresów się nie powiodła)':''));
-  else if(res.why==='nocfg'){if(isAdmin())toast('Powiadomienia e-mail nie są skonfigurowane (Ustawienia).');}
-  else if(res.why!=='nolib')toast('Nie udało się wysłać maili o wydarzeniu ('+res.why+').');
-}
 function openPolls(){return db.resolutions.filter(r=>r.poll&&r.poll.open);}
 function pendingVotes(){const me=curMember();if(!me)return [];return openPolls().filter(r=>canVote(me,r)&&!(r.poll.votes||{})[me.id]);}
 function voteTitle(r){return (r.mode==='wydatek'&&!blank(r.cel)?cap(r.cel.trim()):cap((r.subject||'').replace(/^w sprawie\s*/i,''))||'Wniosek bez tytułu')+(r.mode==='wydatek'&&!blank(r.kwota)?' – '+money(num(r.kwota))+' zł':'');}
@@ -1779,7 +1763,7 @@ function logHtml(){
   let h='<div class="card"><h3>Historia działań</h3>';
   if(!log.length){h+='<p class="hint" style="margin:0">Brak zapisanych działań.</p></div>';return h;}
   h+='<p class="hint">Ostatnie działania w aplikacji – widoczne tylko dla administratora.</p>';
-  h+='<div class="list">'+log.slice(0,100).map(l=>'<div class="rlink"><span><b>'+esc(fmtLogTs(l.ts))+'</b> – '+esc(l.who)+': '+esc(l.action)+'</span></div>').join('')+'</div></div>';
+  h+='<div class="list">'+log.slice(0,15).map(l=>'<div class="rlink"><span><b>'+esc(fmtLogTs(l.ts))+'</b> – '+esc(l.who)+': '+esc(l.action)+'</span></div>').join('')+'</div></div>';
   return h;
 }
 function settingsHtml(){
@@ -2273,7 +2257,6 @@ const ACTIONS={
     if(old){rec.contrib=old.contrib;rec.help=old.help;db.events[i]=rec;}else db.events.push(rec);
     logAction((i>=0?'Zmieniono wydarzenie: ':'Dodano wydarzenie: ')+rec.title);
     ui.evDraft=null;ui.calM=rec.date.slice(0,7);ui.calDay=rec.date;save();render();toast(i>=0?'Zapisano zmiany.':'Dodano do kalendarza.');
-    if(i<0)notifyEvent(rec);
   },
   evdel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='e'+id){ui.confirm='e'+id;render();return;}const ev=(db.events||[]).find(x=>x.id===id);db.events=(db.events||[]).filter(x=>x.id!==id);logAction('Usunięto wydarzenie: '+(ev?ev.title:'?'));ui.confirm=null;save();render();toast('Usunięto wydarzenie.');},
   evhelp(el){
