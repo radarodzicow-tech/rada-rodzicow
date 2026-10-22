@@ -712,7 +712,7 @@ function decideResolution(r){
   const z=blank(r.za)?0:num(r.za),p=blank(r.przeciw)?0:num(r.przeciw);
   if(z>p){
     r.status='przyjeta';
-    if(blank(r.num))r.num=nextNum(r.year,r.id);
+    if(!r.simple&&blank(r.num))r.num=nextNum(r.year,r.id);
   }else{
     r.status='odrzucona';r.num='';r.numT=false;
   }
@@ -754,6 +754,28 @@ function resLine(r){
   const v=votes(r),st=r.status||'przyjeta';
   const lead=st==='przyjeta'?'Uchwała nr '+rno(r):st==='odrzucona'?'Wniosek (odrzucony)':'Wniosek';
   return lead+' '+(subjectOf(r)||'')+(v.dots?'':' (za '+v.za+', przeciw '+v.pr+', wstrzymało się '+v.ws+')')+'.';
+}
+function voteProtocolBlocks(r){
+  const w=voteWho(r),B=[],st=r.status||'przyjeta',v=votes(r);
+  B.push({k:'header',text:db.settings.school});
+  B.push({k:'title',text:'Protokół z głosowania'});
+  B.push({k:'title',text:'z dnia '+fmtDate(r.date),size:26});
+  B.push({k:'p',text:(r.simple?'Przedmiot wniosku: ':'Przedmiot uchwały: ')+((r.simple?r.subject:subjectOf(r))||BL(20))});
+  B.push({k:'p',text:'Głosowało: '+w.full+'. W głosowaniu udział wzięło '+v.n+' z '+(blank(r.elig)?BL(3):r.elig)+' uprawnionych, w tym głosów:'});
+  B.push({k:'list',style:'dash',items:['za '+v.za,'przeciw '+v.pr,'wstrzymało się '+v.ws]});
+  B.push({k:'p',text:'Wynik głosowania: '+(st==='przyjeta'?(r.simple?'wniosek przyjęty.':'uchwała przyjęta'+(blank(r.num)?'.':' (uchwała nr '+rno(r)+').')):st==='odrzucona'?'wniosek odrzucony.':'głosowanie w toku, wynik jeszcze niezatwierdzony.')});
+  if(r.poll&&r.poll.votes&&Object.keys(r.poll.votes).length){
+    B.push({k:'p',text:'Głosy oddane online:'});
+    B.push({k:'list',style:'dash',items:Object.keys(r.poll.votes).map(id=>{
+      const m=db.members.find(x=>x.id===id),val=r.poll.votes[id];
+      const lbl=val==='za'?'za':val==='przeciw'?'przeciw':'wstrzymał(a) się';
+      return (m?m.name:'(nieznana osoba)')+' – '+lbl;
+    })});
+  }
+  const c=sigOf('chair'),s=sigOf('sec');
+  B.push({k:'sig',label:c.label,name:c.name});
+  B.push({k:'sig',label:s.label,name:s.name});
+  return B;
 }
 function bundleBlocks(list){
   const B=[];
@@ -1084,7 +1106,7 @@ function logAction(action){
   }catch(e){}
 }
 
-const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,duesBulk:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
+const ui={tab:'pulpit',editing:null,editTab:'form',allYears:false,confirm:null,pendingImport:null,focusBind:null,bulk:null,duesBulk:null,motionDraft:null,sel:null,readOnly:false,voterId:'',voterPinInput:'',noteDraft:{author:'',ref:'',text:''}};
 const $app=document.getElementById('app');
 const MON=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
 const ICONS={
@@ -1117,6 +1139,7 @@ function resolveRoot(s){
   if(s==='notedraft')return ui.noteDraft;
   if(s==='evdraft')return ui.evDraft;
   if(s==='anndraft')return ui.annDraft;
+  if(s==='motiondraft')return ui.motionDraft;
   if(s&&s.indexOf('evitem:')===0){const id=s.slice(7);ui.evItemDrafts=ui.evItemDrafts||{};return ui.evItemDrafts[id]=ui.evItemDrafts[id]||{cls:'',text:'',qty:''};}
   if(s&&s.indexOf('evcontrib:')===0){const rest=s.slice(10),i=rest.indexOf(':'),eid=rest.slice(0,i),cls=rest.slice(i+1);const ev=(db.events||[]).find(x=>x.id===eid);if(!ev)return null;ev.contrib=ev.contrib||{};return ev.contrib[cls]=ev.contrib[cls]||{babeczki:'',ciasto:'',inne:''};}
   if(s&&s.indexOf('dues:')===0)return (db.duesStats||[]).find(x=>x.id===s.slice(5));
@@ -1466,13 +1489,20 @@ function voteItem(r){
 function glosowanieHtml(){
   const me=curMember();
   const op=openPolls().filter(r=>canVote(me,r)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  let h=head('Głosowanie','Wnioski, nad którymi trwa teraz głosowanie online','');
+  let h=head('Głosowanie','Wnioski, nad którymi trwa teraz głosowanie online',canPlan()&&!ui.motionDraft?'<button class="btn primary" data-act="motionnew">+ Nowy wniosek do głosowania</button>':'');
+  if(canPlan()&&ui.motionDraft){
+    const d=ui.motionDraft;
+    h+='<div class="card" data-root="motiondraft" style="margin-bottom:16px"><h3>Nowy zwykły wniosek</h3><p class="hint">Bez numeru uchwały i bez generowania dokumentu – zapisze się tylko wynik głosowania.</p>'+
+      ta(d,'Treść wniosku','subject',3,'np. Czy organizujemy Dzień Dyni w tym roku?')+
+      sel(d,'Głosuje','body',[['prezydium','Prezydium Rady Rodziców'],['rada','Rada Rodziców']])+
+      '<div class="moreacts"><button class="btn primary" data-act="motionstart">Utwórz i rozpocznij głosowanie</button><button class="btn" data-act="motioncancel">Anuluj</button></div></div>';
+  }
   const pend=pendingVotes();
   if(pend.length)h+='<div class="alertbar"><span class="vwarn" style="color:inherit"><i>!</i>Czeka na Twój głos: '+pend.length+'</span></div>';
-  if(!op.length)h+=emptyBox('Brak trwających głosowań',locked()?'Gdy pojawi się wniosek do głosowania, zobaczysz go tutaj.':'Otwórz wniosek w zakładce Uchwały i kliknij „Rozpocznij głosowanie online”.','');
+  if(!op.length)h+=emptyBox('Brak trwających głosowań',locked()?'Gdy pojawi się wniosek do głosowania, zobaczysz go tutaj.':'Otwórz wniosek w zakładce Uchwały, kliknij „Rozpocznij głosowanie online”, albo utwórz zwykły wniosek powyżej.','');
   else h+='<div class="list">'+op.map(voteItem).join('')+'</div>';
   const done=db.resolutions.filter(r=>r.poll&&!r.poll.open&&pollTally(r).total&&canVote(me,r)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
-  if(done.length)h+='<h3 class="h3">Ostatnio zakończone</h3><div class="list">'+done.map(r=>{const t=pollTally(r),st=r.status||'przyjeta';return '<div class="card"><b>'+esc(voteTitle(r))+'</b><p class="hint" style="margin:4px 0 0">'+fmtDate(r.date)+' · za '+t.za+', przeciw '+t.przeciw+', wstrz. '+t.wstrz+' · '+(st==='przyjeta'?'przyjęta (uchwała nr '+esc(rno(r))+')':st==='odrzucona'?'odrzucona':'czeka na zatwierdzenie wyniku')+'</p></div>';}).join('')+'</div>';
+  if(done.length)h+='<h3 class="h3">Ostatnio zakończone</h3><div class="list">'+done.map(r=>{const t=pollTally(r),st=r.status||'przyjeta';return '<div class="card"><b>'+esc(voteTitle(r))+'</b><p class="hint" style="margin:4px 0 0">'+fmtDate(r.date)+' · za '+t.za+', przeciw '+t.przeciw+', wstrz. '+t.wstrz+' · '+(st==='przyjeta'?(r.simple?'przyjęty':'przyjęta (uchwała nr '+esc(rno(r))+')'):st==='odrzucona'?'odrzucona':'czeka na zatwierdzenie wyniku')+'</p></div>';}).join('')+'</div>';
   return h;
 }
 function navHtml(){
@@ -1591,14 +1621,14 @@ function listHtml(){
     else if(!ms.length)h+=emptyBox('Brak zebrań w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked('meeting')?'':' albo dodaj nowe zebranie.'),locked('meeting')?'':'<br><button class="btn primary" data-act="new" data-kind="meeting">Dodaj zebranie</button>');
     else h+='<div class="list">'+ms.map(meetingCard).join('')+'</div>';
   }else if(ui.tab==='uchwaly'){
-    let rs=db.resolutions.filter(r=>ui.allYears||num(r.year)===viewYear).sort((a,b)=>(num(b.year||0)-num(a.year||0))||(num(b.num)-num(a.num)));
+    let rs=db.resolutions.filter(r=>!r.simple&&(ui.allYears||num(r.year)===viewYear)).sort((a,b)=>(num(b.year||0)-num(a.year||0))||(num(b.num)-num(a.num)));
     const selOn=ui.sel&&ui.sel.kind==='resolution';
     h+=yearBar();
     h+=head('Uchwały','Numeracja i głosowanie liczą się same',locked('resolution')?'':(selOn?'':'<div class="moreacts"><button class="btn" data-act="bulkopen">Wklej listę</button>'+(rs.length?'<button class="btn" data-act="bulkselon" data-kind="resolution">Zaznacz kilka</button>':'')+'<button class="btn primary" data-act="new" data-kind="resolution">Nowa uchwała</button></div>'));
     h+=bulkSelBar('resolution');
     if(!locked('resolution')&&!selOn&&!db.flags.seed20)h+=seedCard();
     if(!locked('resolution')&&!selOn&&ui.bulk)h+=bulkCard();
-    if(!db.resolutions.length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked('resolution')?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked('resolution')?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
+    if(!db.resolutions.filter(r=>!r.simple).length)h+=emptyBox('Nie ma jeszcze żadnych uchwał',locked('resolution')?'Nic tu jeszcze nie dodano.':'Wpisz kwotę i cel wydatku, a treść uchwały ułoży się według Waszego wzoru.',locked('resolution')?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else if(!rs.length)h+=emptyBox('Brak uchwał w roku szkolnym '+esc(syLabel(viewYear)),'Zmień rok u góry.'+(locked('resolution')?'':' albo dodaj nową uchwałę.'),locked('resolution')?'':'<br><button class="btn primary" data-act="new" data-kind="resolution">Dodaj uchwałę</button>');
     else h+='<div class="list">'+rs.map(resCard).join('')+'</div>'+(selOn?'':'<p style="margin-top:16px"><button class="btn" data-act="dlall">Pobierz widoczne uchwały w jednym pliku Word</button></p>');
   }else if(ui.tab==='kalendarz'){
@@ -1769,18 +1799,19 @@ function settingsHtml(){
 /* --- widok edycji --- */
 function recTitle(k,r){
   if(k==='meeting')return cap(mtype(r).nom)+' '+fmtDate(r.date);
-  if(k==='resolution'){const st=r.status||'przyjeta';return st==='przyjeta'?'Uchwała '+rno(r):st==='odrzucona'?'Wniosek (odrzucony)':'Wniosek';}
+  if(k==='resolution'){const st=r.status||'przyjeta';if(r.simple)return st==='przyjeta'?'Wniosek przyjęty':st==='odrzucona'?'Wniosek odrzucony':'Zwykły wniosek';return st==='przyjeta'?'Uchwała '+rno(r):st==='odrzucona'?'Wniosek (odrzucony)':'Wniosek';}
   if(k==='doc')return r.title||'Dokument';
   return REPORT_NAMES[r.type];
 }
 function pollCard(r){
   const t=pollTally(r),poll=r.poll||{open:false,votes:{}},st=r.status||'przyjeta';
+  const protoBtn=(st!=='wniosek'||t.total>0)?'<div class="moreacts" style="margin-top:10px"><button class="btn" data-act="dlproto">Pobierz protokół z głosowania</button></div>':'';
   let h='<div class="card k-resolution"><h3>Głosowanie online</h3>';
   if(!ui.readOnly&&!locked()){
     h+='<div class="moreacts">'+(poll.open?'<button class="btn" data-act="pollclose">Zakończ głosowanie</button>':'<button class="btn primary" data-act="pollopen">Rozpocznij głosowanie online</button>')+
-      (t.total&&st==='wniosek'?'<button class="btn primary" data-act="pollapply">Zatwierdź wynik i utwórz uchwałę</button>':'')+'</div>';
+      (t.total&&st==='wniosek'?'<button class="btn primary" data-act="pollapply">'+(r.simple?'Zatwierdź wynik głosowania':'Zatwierdź wynik i utwórz uchwałę')+'</button>':'')+'</div>';
   }
-  if(!poll.open&&!t.total){h+='<p class="hint">Głosowanie online jest nieaktywne. '+(ui.readOnly||locked()?'':'Możesz je rozpocząć powyżej, a Prezydium zagłosuje w tej aplikacji – każda osoba zaloguje się swoim e-mailem i hasłem. Dopiero po zakończeniu głosowania i zatwierdzeniu wyniku powstanie uchwała z numerem – jeśli wynik będzie negatywny, uchwała nie zostanie utworzona.')+'</p></div>';return h;}
+  if(!poll.open&&!t.total){h+='<p class="hint">Głosowanie online jest nieaktywne. '+(ui.readOnly||locked()?'':(r.simple?'Możesz je rozpocząć powyżej, a uprawnione osoby zagłosują w tej aplikacji. Po zakończeniu głosowania zatwierdzisz wynik – wniosek zostanie przyjęty lub odrzucony, bez numeru uchwały.':'Możesz je rozpocząć powyżej, a Prezydium zagłosuje w tej aplikacji – każda osoba zaloguje się swoim e-mailem i hasłem. Dopiero po zakończeniu głosowania i zatwierdzeniu wyniku powstanie uchwała z numerem – jeśli wynik będzie negatywny, uchwała nie zostanie utworzona.'))+'</p>'+protoBtn+'</div>';return h;}
   h+='<p class="hint">Oddanych głosów: '+t.total+' – za '+t.za+', przeciw '+t.przeciw+', wstrzymało się '+t.wstrz+'.</p>';
   if((isAdmin()||curMember())&&t.total){
     h+='<div class="list" style="margin-bottom:10px">'+Object.keys(poll.votes).map(id=>{const m=db.members.find(x=>x.id===id);const v=poll.votes[id];const lbl=v==='za'?'za':v==='przeciw'?'przeciw':'wstrzymał(a) się';return '<div class="rlink"><span><b>'+esc(m?m.name:'(nieznana osoba)')+'</b> – '+lbl+'</span></div>';}).join('')+'</div><p class="hint" style="margin-top:-4px;margin-bottom:10px">To, kto jak zagłosował, widzą członkowie Prezydium – w samej uchwale pozostaną wyłącznie liczby.</p>';
@@ -1792,7 +1823,8 @@ function pollCard(r){
       const my=poll.votes[me.id];
       h+='<p class="hint">Głosujesz jako: <b>'+esc(me.name)+'</b></p><div class="moreacts">'+[['za','Za'],['przeciw','Przeciw'],['wstrz','Wstrzymuję się']].map(o=>'<button class="btn'+(my===o[0]?' primary':'')+'" data-act="votecast" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
     }
-  }else if(!poll.open){h+='<p class="hint">Głosowanie zostało zakończone'+(st==='przyjeta'?' – uchwała została przyjęta.':st==='odrzucona'?' – wniosek został odrzucony.':', poczekaj na zatwierdzenie wyniku.')+'</p>';}
+  }else if(!poll.open){h+='<p class="hint">Głosowanie zostało zakończone'+(st==='przyjeta'?(r.simple?' – wniosek został przyjęty.':' – uchwała została przyjęta.'):st==='odrzucona'?' – wniosek został odrzucony.':', poczekaj na zatwierdzenie wyniku.')+'</p>';}
+  h+=protoBtn;
   h+='</div>';
   return h;
 }
@@ -1800,6 +1832,11 @@ function editHtmlReadOnly(){
   const e=ui.editing,r=getRec();
   if(!r){ui.editing=null;return listHtml();}
   const cls=KIND_CLASS[e.kind];
+  if(e.kind==='resolution'&&r.simple){
+    return '<main class="wrap '+cls+'">'+idBar()+'<div class="editbar"><button class="btn" data-act="back" aria-label="Wróć do listy">‹ Lista</button><h2>'+esc(recTitle(e.kind,r))+'</h2></div>'+
+     '<div class="card"><p style="margin:0;white-space:pre-wrap">'+esc(r.subject)+'</p></div>'+
+     '<div style="margin-top:16px">'+pollCard(r)+'</div></main>';
+  }
   return '<main class="wrap '+cls+'">'+idBar()+'<div class="editbar"><button class="btn" data-act="back" aria-label="Wróć do listy">‹ Lista</button><h2>'+esc(recTitle(e.kind,r))+'</h2></div>'+
    '<div class="sheetwrap"><div class="sheet" id="sheet"></div></div>'+
    (e.kind==='meeting'?'<p style="text-align:center;margin-top:14px"><button class="btn" data-act="dlatt">Lista obecności (Word)</button></p>':'')+
@@ -1812,6 +1849,13 @@ function editHtml(){
   const e=ui.editing,r=getRec();
   if(!r){ui.editing=null;return listHtml();}
   const cls=KIND_CLASS[e.kind];
+  if(e.kind==='resolution'&&r.simple){
+    const more='<div class="card"><h3>Więcej</h3><div class="moreacts">'+
+      (ui.confirm==='rec'?'<span class="confirmrow"><span class="chint">Na pewno usunąć?</span><button class="btn warn" data-act="del">Tak, usuń</button><button class="btn" data-act="delcancel">Anuluj</button></span>':'<button class="btn ghost" data-act="del">Usuń</button>')+'</div></div>'+
+      pollCard(r);
+    return '<main class="wrap '+cls+'"><div class="editbar"><button class="btn" data-act="back" aria-label="Wróć do listy">‹ Lista</button><h2 id="etitle">'+esc(recTitle(e.kind,r))+'</h2></div>'+
+     '<div class="pane form" data-root="rec">'+motionForm(r)+more+'</div></main>';
+  }
   let f='';
   if(e.kind==='meeting')f=meetingForm(r);else if(e.kind==='resolution')f=resForm(r);else if(e.kind==='doc')f=docForm(r);else f=repForm(r);
   const more='<div class="card"><h3>Więcej</h3><div class="moreacts">'+
@@ -1824,6 +1868,8 @@ function editHtml(){
 }
 function abarHtml(){
   const e=ui.editing;const cls=e?KIND_CLASS[e.kind]:'';
+  const r=e?getRec():null;
+  if(e&&e.kind==='resolution'&&r&&r.simple)return '';
   if(locked())return '<div class="abar '+cls+'"><div class="abar-in" style="justify-content:center"><button class="btn primary" data-act="dl">Pobierz Word</button></div></div>';
   return '<div class="abar '+cls+'"><div class="abar-in"><div class="seg" role="group" aria-label="Widok"><button class="'+(ui.editTab==='form'?'on':'')+'" data-act="seg" data-v="form">Edycja</button><button class="'+(ui.editTab==='preview'?'on':'')+'" data-act="seg" data-v="preview">Podgląd</button></div><button class="btn primary" data-act="dl">Pobierz Word</button></div></div>';
 }
@@ -1867,6 +1913,21 @@ function attachmentsCard(r){
    (list.length?'<div class="attlist">'+list.map(attachmentItem).join('')+'</div>':'')+
    (!locked()?'<div class="moreacts" style="margin-top:10px"><button class="btn small" data-act="attpick">Dodaj zdjęcie lub PDF</button></div>':'')+
    '</div>';
+}
+function motionForm(r){
+  const v=voteInfo(r),st=r.status||'przyjeta';
+  let h='<div class="card"><h3>Treść wniosku</h3>'+ta(r,'Treść','subject',4,'np. Czy organizujemy Dzień Dyni w tym roku?')+
+    '<p class="hint">Zwykły wniosek – nie jest uchwałą: nie ma numeru, nie trafia do zakładki Uchwały i nie generuje dokumentu Word.</p></div>';
+  h+='<div class="card"><h3>Głosowanie</h3>'+
+    '<p class="vstat '+(st==='przyjeta'?'ok':st==='odrzucona'?'no':'wait')+'" style="margin-bottom:12px">'+(st==='przyjeta'?'Status: wniosek przyjęty':st==='odrzucona'?'Status: wniosek odrzucony':'Status: czeka na głosowanie')+'</p>'+
+    '<div class="g2">'+sel(r,'Głosuje','body',[['prezydium','Prezydium Rady Rodziców'],['rada','Rada Rodziców']])+inp(r,'Uprawnionych do głosowania','elig',{type:'number',num:true,min:0})+'</div>'+
+    chk(r,'Wpiszę głosy ręcznie po wydruku (zostaną kropki)','manual',true)+
+    '<div class="g3">'+inp(r,'Za','za',{type:'number',num:true,min:0,dis:r.manual})+inp(r,'Przeciw','przeciw',{type:'number',num:true,min:0,dis:r.manual})+inp(r,'Wstrzymało się','wstrz',{type:'number',num:true,min:0,dis:r.manual})+'</div>'+
+    '<span class="vstat '+v.cls+'" id="vstat">'+esc(v.text)+'</span>'+
+    (st==='wniosek'&&!r.manual?'<div class="moreacts" style="margin-top:12px"><button class="btn primary" data-act="decide">Zatwierdź wynik głosowania</button></div>':'')+
+    (st==='odrzucona'?'<div class="moreacts" style="margin-top:12px"><button class="btn" data-act="reopen">Głosuj ponownie</button></div>':'')+
+    '</div>';
+  return h;
 }
 function resForm(r){
   const v=voteInfo(r),st=r.status||'przyjeta';
@@ -1947,7 +2008,7 @@ function onBind(t){
   const rk=rootEl.dataset.root;
   if(rk!=='pin'){
     if(ui.readOnly)return;
-    if(rk==='evdraft'||rk==='anndraft'){if(!canPlan())return;}
+    if(rk==='evdraft'||rk==='anndraft'||rk==='motiondraft'){if(!canPlan())return;}
     else if(rk.indexOf('evcontrib:')===0){
       const rest=rk.slice(10),ci=rest.indexOf(':'),rcls=rest.slice(ci+1),me=curMember();
       if(!(canPlan()||(me&&String(me.cls||'').trim()&&String(me.cls||'').trim()===rcls)))return;
@@ -1963,7 +2024,7 @@ function onBind(t){
   setP(root,p,v);
   if(rk==='bulk'){const pv=document.getElementById('bulkprev');if(pv)pv.innerHTML=bulkPrev();return;}
   if(rk==='duesbulk'){const pv=document.getElementById('duesbulkprev');if(pv)pv.innerHTML=duesBulkPrev();return;}
-  if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft'||rk.indexOf('evitem:')===0)return;
+  if(rk==='notedraft'||rk==='pin'||rk==='evdraft'||rk==='anndraft'||rk==='motiondraft'||rk.indexOf('evitem:')===0)return;
   const e=ui.editing;
   if(e&&e.kind==='resolution'&&root===getRec()){
     const r=root;
@@ -2098,8 +2159,9 @@ const ACTIONS={
   },
   dl(){downloadCurrent();},
   dlatt(){const r=getRec();if(!r)return;saveDocx(attBlocks(r),'Lista obecności',asciiName('Lista_obecnosci_'+r.date)+'.docx');},
+  dlproto(){const r=getRec();if(!r)return;saveDocx(voteProtocolBlocks(r),'Protokół z głosowania',asciiName('Protokol_glosowania_'+r.date)+'.docx');},
   dlall(){
-    const rs=db.resolutions.filter(r=>ui.allYears||num(r.year)===viewYear).sort((a,b)=>(num(a.year||0)-num(b.year||0))||(num(a.num)-num(b.num)));
+    const rs=db.resolutions.filter(r=>!r.simple&&(ui.allYears||num(r.year)===viewYear)).sort((a,b)=>(num(a.year||0)-num(b.year||0))||(num(a.num)-num(b.num)));
     if(!rs.length)return;saveDocx(bundleBlocks(rs),'Uchwały',asciiName('Uchwaly_'+(ui.allYears?'wszystkie':syLabel(viewYear)))+'.docx');
   },
   dup(){
@@ -2114,9 +2176,10 @@ const ACTIONS={
     const r=getRec();if(!r)return;const t=pollTally(r);
     r.za=String(t.za);r.przeciw=String(t.przeciw);r.wstrz=String(t.wstrz);r.manual=false;if(r.poll)r.poll.open=false;
     const st=decideResolution(r);
-    logAction((st==='przyjeta'?'Przyjęto uchwałę (głosowanie): ':'Odrzucono wniosek (głosowanie): ')+voteTitle(r));
+    logAction((st==='przyjeta'?(r.simple?'Przyjęto wniosek (głosowanie): ':'Przyjęto uchwałę (głosowanie): '):'Odrzucono wniosek (głosowanie): ')+voteTitle(r));
     save();render();refreshPreview();updateLive();
-    toast(st==='przyjeta'?'Głosowanie zakończone – uchwała przyjęta, nadano numer '+r.num+'/'+r.year+'.':'Głosowanie zakończone – wniosek odrzucony, uchwała nie powstała.');
+    if(r.simple)toast(st==='przyjeta'?'Głosowanie zakończone – wniosek przyjęty.':'Głosowanie zakończone – wniosek odrzucony.');
+    else toast(st==='przyjeta'?'Głosowanie zakończone – uchwała przyjęta, nadano numer '+r.num+'/'+r.year+'.':'Głosowanie zakończone – wniosek odrzucony, uchwała nie powstała.');
   },
   decide(){
     const r=getRec();if(!r)return;
@@ -2266,6 +2329,18 @@ const ACTIONS={
     ui.annDraft=null;save();render();toast('Ogłoszenie opublikowane.');
   },
   anndel(el){if(!canPlan())return;const id=el.dataset.id;if(ui.confirm!=='a'+id){ui.confirm='a'+id;render();return;}db.ann=(db.ann||[]).filter(x=>x.id!==id);ui.confirm=null;save();render();toast('Usunięto ogłoszenie.');},
+  motionnew(){if(!canPlan())return;ui.motionDraft={subject:'',body:'prezydium'};ui.focusBind='subject';render();},
+  motioncancel(){ui.motionDraft=null;render();},
+  motionstart(){
+    if(!canPlan())return;
+    const d=ui.motionDraft;if(!d||!String(d.subject||'').trim()){toast('Wpisz treść wniosku.');return;}
+    const year=syStart(todayISO());
+    const r={id:uid(),status:'wniosek',num:'',year:year,date:todayISO(),mode:'',subject:String(d.subject).trim(),subjT:true,kwota:'',cel:'',text:'',body:d.body||'prezydium',elig:db.settings.presidium,za:'',przeciw:'',wstrz:'',manual:false,attachments:[],simple:true,poll:{open:true,votes:{}},wejscie:''};
+    db.resolutions.push(r);
+    logAction('Utworzono zwykły wniosek do głosowania: '+voteTitle(r));
+    ui.motionDraft=null;save();render();notifyVote(r,false);
+    toast('Wniosek utworzony – głosowanie rozpoczęte.');
+  },
   addnote(){
     if(!canAddNotes())return;
     const d=ui.noteDraft||{};
